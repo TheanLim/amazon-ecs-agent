@@ -80,6 +80,8 @@ func getClientConfig(httpClient *http.Client, authData *apicontainer.ECRAuthData
 		cfg = cfg.WithCredentials(instancecreds.GetCredentials(false))
 	}
 
+	cfg = cfg.WithUseDualStack(true)
+	
 	return cfg, nil
 }
 
