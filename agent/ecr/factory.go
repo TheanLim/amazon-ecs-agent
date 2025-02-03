@@ -28,6 +28,7 @@ import (
 	"github.com/aws/amazon-ecs-agent/ecs-agent/httpclient"
 	"github.com/aws/aws-sdk-go/aws"
 	awscreds "github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/session"
 )
 
@@ -79,8 +80,8 @@ func getClientConfig(httpClient *http.Client, authData *apicontainer.ECRAuthData
 	} else {
 		cfg = cfg.WithCredentials(instancecreds.GetCredentials(false))
 	}
-
-	cfg = cfg.WithUseDualStack(true)
+	
+	cfg.UseDualStackEndpoint = endpoints.DualStackEndpointStateEnabled
 	
 	return cfg, nil
 }
