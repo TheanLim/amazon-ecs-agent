@@ -160,6 +160,11 @@ func (authProvider *ecrAuthProvider) getAuthConfigFromECR(image string, key cach
 	if ecrAuthData == nil {
 		return registry.AuthConfig{}, fmt.Errorf("ecr auth: missing AuthorizationData in ECR response for %s", image)
 	}
+	logger.Info("Received ECR authorization data", logger.Fields{
+		"ProxyEndpoint": aws.StringValue(ecrAuthData.ProxyEndpoint),
+		"ExpiresAt": aws.TimeValue(ecrAuthData.ExpiresAt),
+		"hasAuthToken": ecrAuthData.AuthorizationToken != nil,
+	})
 
 	// Verify the auth data has the correct format for ECR
 	if ecrAuthData.ProxyEndpoint != nil &&
