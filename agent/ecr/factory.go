@@ -82,6 +82,7 @@ func getClientConfig(httpClient *http.Client, authData *apicontainer.ECRAuthData
 	}
 	
 	cfg.UseDualStackEndpoint = endpoints.DualStackEndpointStateEnabled
+	cfg.Endpoint=aws.String("ecr.us-west-2.api.aws")
 	
 	return cfg, nil
 }
