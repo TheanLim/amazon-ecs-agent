@@ -15,21 +15,22 @@
 package ecr
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"time"
 
+	"../../ecs-agent/credentials/instancecreds"
 	apicontainer "github.com/aws/amazon-ecs-agent/agent/api/container"
 	"github.com/aws/amazon-ecs-agent/agent/config"
-	ecrapi "github.com/aws/amazon-ecs-agent/agent/ecr/model/ecr"
 	agentversion "github.com/aws/amazon-ecs-agent/agent/version"
 	"github.com/aws/amazon-ecs-agent/ecs-agent/credentials"
-	"github.com/aws/amazon-ecs-agent/ecs-agent/credentials/instancecreds"
 	"github.com/aws/amazon-ecs-agent/ecs-agent/httpclient"
-	"github.com/aws/aws-sdk-go/aws"
-	awscreds "github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/endpoints"
-	"github.com/aws/aws-sdk-go/aws/session"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	awscreds "github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/ecr"
 )
 
 // ECRFactory defines the interface to produce an ECR SDK client
@@ -64,29 +65,38 @@ func (factory *ecrFactory) GetClient(authData *apicontainer.ECRAuthData) (ECRCli
 
 // getClientConfig returns the config for the ecr client based on authData
 func getClientConfig(httpClient *http.Client, authData *apicontainer.ECRAuthData) (*aws.Config, error) {
-	cfg := aws.NewConfig().WithRegion(authData.Region).WithHTTPClient(httpClient)
+	ctx := context.Background()
+	cfg, err := awsconfig.LoadDefaultConfig(ctx, 
+		awsconfig.WithRegion(authData.Region),
+		awsconfig.WithHTTPClient(httpClient),
+		awsconfig.WithUseDualStackEndpoint(aws.DualStackEndpointStateEnabled),
+	)
+	if err != nil {
+		return nil, err
+	}
+
 	if authData.EndpointOverride != "" {
-		cfg.Endpoint = aws.String(authData.EndpointOverride)
+		cfg.BaseEndpoint = aws.String(authData.EndpointOverride)
 	}
 
 	if authData.UseExecutionRole {
 		if authData.GetPullCredentials() == (credentials.IAMRoleCredentials{}) {
 			return nil, fmt.Errorf("container uses execution credentials, but the credentials are empty")
 		}
-		creds := awscreds.NewStaticCredentials(authData.GetPullCredentials().AccessKeyID,
+		staticCreds := awscreds.NewStaticCredentialsProvider(
+			authData.GetPullCredentials().AccessKeyID,
 			authData.GetPullCredentials().SecretAccessKey,
-			authData.GetPullCredentials().SessionToken)
-		cfg = cfg.WithCredentials(creds)
+			authData.GetPullCredentials().SessionToken,
+		)
+		cfg.Credentials = staticCreds
 	} else {
-		cfg = cfg.WithCredentials(instancecreds.GetCredentials(false))
+		cfg.Credentials = instancecreds.NewV2Credentials(false)
 	}
 	
-	cfg.UseDualStackEndpoint = endpoints.DualStackEndpointStateEnabled
-	
-	return cfg, nil
+	return &cfg, nil
 }
 
 func (factory *ecrFactory) newClient(cfg *aws.Config) ECRClient {
-	sdkClient := ecrapi.New(session.New(cfg))
-	return NewECRClient(sdkClient)
+	ecrClient := ecr.NewFromConfig(*cfg)
+	return NewECRClient(ecrClient)
 }
