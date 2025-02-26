@@ -14,13 +14,13 @@
 package session
 
 import (
-	"github.com/aws/amazon-ecs-agent/ecs-agent/acs/model/ecsacs"
 	"github.com/aws/amazon-ecs-agent/ecs-agent/doctor"
 	"github.com/aws/amazon-ecs-agent/ecs-agent/logger"
 	"github.com/aws/amazon-ecs-agent/ecs-agent/logger/field"
 	"github.com/aws/amazon-ecs-agent/ecs-agent/wsclient"
 
-	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	ecsacs "github.com/aws/aws-sdk-go-v2/service/acs"
 )
 
 // heartbeatResponder implements the wsclient.RequestResponder interface for responding
@@ -63,7 +63,7 @@ func (r *heartbeatResponder) processHeartbeatMessage(message *ecsacs.HeartbeatMe
 		err := r.respond(ack)
 		if err != nil {
 			logger.Warn("Error acknowledging server heartbeat", logger.Fields{
-				field.MessageID: aws.StringValue(ack.MessageId),
+				field.MessageID: aws.ToString(ack.MessageId),
 				field.Error:     err,
 			})
 		}
