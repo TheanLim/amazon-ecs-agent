@@ -36,7 +36,7 @@ import (
 	mock_platform "github.com/aws/amazon-ecs-agent/ecs-agent/netlib/platform/mocks"
 	mock_netwrapper "github.com/aws/amazon-ecs-agent/ecs-agent/utils/netwrapper/mocks"
 
-	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 )
