@@ -31,7 +31,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var testAttachTaskENIMessage = &ecsacs.AttachTaskNetworkInterfacesMessage{
+var testAttachTaskENIMessage = &ecsacs.AttachTaskNetworkInterfacesInput{
 	MessageId:            aws.String(testconst.MessageID),
 	ClusterArn:           aws.String(testconst.ClusterARN),
 	ContainerInstanceArn: aws.String(testconst.ContainerInstanceARN),
@@ -237,7 +237,7 @@ func TestTaskENIAckHappyPath(t *testing.T) {
 		mockENIHandler,
 		testResponseSender)
 
-	handleAttachMessage := testAttachTaskENIResponder.HandlerFunc().(func(*ecsacs.AttachTaskNetworkInterfacesMessage))
+	handleAttachMessage := testAttachTaskENIResponder.HandlerFunc().(func(*ecsacs.AttachTaskNetworkInterfacesInput))
 	go handleAttachMessage(testAttachTaskENIMessage)
 
 	attachTaskEniAckSent := <-ackSent

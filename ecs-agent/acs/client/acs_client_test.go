@@ -177,14 +177,14 @@ func TestPayloadHandlerCalled(t *testing.T) {
 	cs := testCS(conn)
 	defer cs.Close()
 
-	messageChannel := make(chan *ecsacs.PayloadMessage)
-	reqHandler := func(payload *ecsacs.PayloadMessage) {
+	messageChannel := make(chan *ecsacs.PayloadInput)
+	reqHandler := func(payload *ecsacs.PayloadInput) {
 		messageChannel <- payload
 	}
 	cs.AddRequestHandler(reqHandler)
 	go cs.Serve(context.Background())
 
-	expectedMessage := &ecsacs.PayloadMessage{
+	expectedMessage := &ecsacs.PayloadInput{
 		Tasks: []*ecsacs.Task{{
 			Arn: aws.String("arn"),
 		}},
@@ -208,15 +208,15 @@ func TestRefreshCredentialsHandlerCalled(t *testing.T) {
 	cs := testCS(conn)
 	defer cs.Close()
 
-	messageChannel := make(chan *ecsacs.IAMRoleCredentialsMessage)
-	reqHandler := func(message *ecsacs.IAMRoleCredentialsMessage) {
+	messageChannel := make(chan *ecsacs.RefreshTaskIAMRoleCredentialsInput)
+	reqHandler := func(message *ecsacs.RefreshTaskIAMRoleCredentialsInput) {
 		messageChannel <- message
 	}
 	cs.AddRequestHandler(reqHandler)
 
 	go cs.Serve(context.Background())
 
-	expectedMessage := &ecsacs.IAMRoleCredentialsMessage{
+	expectedMessage := &ecsacs.RefreshTaskIAMRoleCredentialsInput{
 		MessageId: aws.String("123"),
 		TaskArn:   aws.String("t1"),
 		RoleCredentials: &ecsacs.IAMRoleCredentials{
@@ -279,7 +279,7 @@ func TestConnect(t *testing.T) {
 	}
 
 	errs := make(chan error)
-	cs.AddRequestHandler(func(msg *ecsacs.PayloadMessage) {
+	cs.AddRequestHandler(func(msg *ecsacs.PayloadInput) {
 		if *msg.MessageId != "messageId" || len(msg.Tasks) != 1 || *msg.Tasks[0].Arn != "arn1" {
 			errs <- errors.New("incorrect payloadMessage arguments")
 		} else {
@@ -402,8 +402,8 @@ func TestAttachENIHandlerCalled(t *testing.T) {
 	conn.EXPECT().SetWriteDeadline(gomock.Any()).Return(nil)
 	conn.EXPECT().Close()
 
-	messageChannel := make(chan *ecsacs.AttachTaskNetworkInterfacesMessage)
-	reqHandler := func(message *ecsacs.AttachTaskNetworkInterfacesMessage) {
+	messageChannel := make(chan *ecsacs.AttachTaskNetworkInterfacesInput)
+	reqHandler := func(message *ecsacs.AttachTaskNetworkInterfacesInput) {
 		messageChannel <- message
 	}
 
@@ -411,7 +411,7 @@ func TestAttachENIHandlerCalled(t *testing.T) {
 
 	go cs.Serve(context.Background())
 
-	expectedMessage := &ecsacs.AttachTaskNetworkInterfacesMessage{
+	expectedMessage := &ecsacs.AttachTaskNetworkInterfacesInput{
 		MessageId:  aws.String("123"),
 		ClusterArn: aws.String("default"),
 		TaskArn:    aws.String("task"),
@@ -453,8 +453,8 @@ func TestAttachInstanceENIHandlerCalled(t *testing.T) {
 	conn.EXPECT().SetWriteDeadline(gomock.Any()).Return(nil)
 	conn.EXPECT().Close()
 
-	messageChannel := make(chan *ecsacs.AttachInstanceNetworkInterfacesMessage)
-	reqHandler := func(message *ecsacs.AttachInstanceNetworkInterfacesMessage) {
+	messageChannel := make(chan *ecsacs.AttachInstanceNetworkInterfacesInput)
+	reqHandler := func(message *ecsacs.AttachInstanceNetworkInterfacesInput) {
 		messageChannel <- message
 	}
 
@@ -462,7 +462,7 @@ func TestAttachInstanceENIHandlerCalled(t *testing.T) {
 
 	go cs.Serve(context.Background())
 
-	expectedMessage := &ecsacs.AttachInstanceNetworkInterfacesMessage{
+	expectedMessage := &ecsacs.AttachInstanceNetworkInterfacesInput{
 		MessageId:  aws.String("123"),
 		ClusterArn: aws.String("default"),
 		ElasticNetworkInterfaces: []*ecsacs.ElasticNetworkInterface{

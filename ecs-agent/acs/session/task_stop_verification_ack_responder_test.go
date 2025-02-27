@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var testStopVerificationAck = &ecsacs.TaskStopVerificationAck{
+var testStopVerificationAck = &ecsacs.TaskStopVerificationOutput{
 	GeneratedAt: aws.Int64(testconst.DummyInt),
 	MessageId:   aws.String(testconst.MessageID),
 	StopTasks: []*ecsacs.TaskIdentifier{
@@ -68,7 +68,7 @@ func TestTaskStopVerificationAckResponderStopsTasks(t *testing.T) {
 		manifestMessageIDAccessor,
 		metricsFactory)
 	handleTaskStopVerificationAck :=
-		taskStopVerificationAckResponder.HandlerFunc().(func(message *ecsacs.TaskStopVerificationAck))
+		taskStopVerificationAckResponder.HandlerFunc().(func(message *ecsacs.TaskStopVerificationOutput))
 	handleTaskStopVerificationAck(testStopVerificationAck)
 
 	assert.True(t, taskStopVerificationAckTaskHasBeenStopped)
@@ -99,7 +99,7 @@ func TestTaskStopVerificationAckResponderInvalidAck(t *testing.T) {
 		manifestMessageIDAccessor,
 		metricsFactory)
 	handleTaskStopVerificationAck :=
-		taskStopVerificationAckResponder.HandlerFunc().(func(message *ecsacs.TaskStopVerificationAck))
+		taskStopVerificationAckResponder.HandlerFunc().(func(message *ecsacs.TaskStopVerificationOutput))
 	handleTaskStopVerificationAck(testStopVerificationAck)
 
 	assert.NotEqual(t, aws.ToString(testStopVerificationAck.MessageId), differentMessageID)

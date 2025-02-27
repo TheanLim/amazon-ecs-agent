@@ -311,7 +311,7 @@ type Task struct {
 
 // TaskFromACS translates ecsacs.Task to apitask.Task by first marshaling the received
 // ecsacs.Task to json and unmarshalling it as apitask.Task
-func TaskFromACS(acsTask *ecsacs.Task, envelope *ecsacs.PayloadMessage) (*Task, error) {
+func TaskFromACS(acsTask *ecsacs.Task, envelope *ecsacs.PayloadInput) (*Task, error) {
 	data, err := jsonutil.BuildJSON(acsTask)
 	if err != nil {
 		return nil, err

@@ -1210,7 +1210,7 @@ func TestPostUnmarshalTaskWithDockerVolumes(t *testing.T) {
 		},
 	}
 	seqNum := int64(42)
-	task, err := TaskFromACS(&taskFromACS, &ecsacs.PayloadMessage{SeqNum: &seqNum})
+	task, err := TaskFromACS(&taskFromACS, &ecsacs.PayloadInput{SeqNum: &seqNum})
 	assert.Nil(t, err, "Should be able to handle acs task")
 	assert.Equal(t, 1, len(task.Containers)) // before PostUnmarshalTask
 	cfg := config.Config{}
@@ -1236,7 +1236,7 @@ func TestPostUnmarshalTaskWithEFSVolumes(t *testing.T) {
 	}
 	for region, expectedHostname := range testCases {
 		t.Run(region, func(t *testing.T) {
-			task, err := TaskFromACS(taskFromACS, &ecsacs.PayloadMessage{SeqNum: &seqNum})
+			task, err := TaskFromACS(taskFromACS, &ecsacs.PayloadInput{SeqNum: &seqNum})
 			assert.Nil(t, err, "Should be able to handle acs task")
 			assert.Equal(t, 1, len(task.Containers)) // before PostUnmarshalTask
 			cfg := config.Config{}
@@ -1293,7 +1293,7 @@ func TestPostUnmarshalTaskWithEFSVolumesThatUseECSVolumePlugin(t *testing.T) {
 	taskFromACS := getACSEFSTask()
 	taskFromACS.RoleCredentials = testCreds
 	seqNum := int64(42)
-	task, err := TaskFromACS(taskFromACS, &ecsacs.PayloadMessage{SeqNum: &seqNum})
+	task, err := TaskFromACS(taskFromACS, &ecsacs.PayloadInput{SeqNum: &seqNum})
 	assert.Nil(t, err, "Should be able to handle acs task")
 	assert.Equal(t, 1, len(task.Containers))
 	task.SetCredentialsID(aws.ToString(testCreds.CredentialsId))
@@ -1444,7 +1444,7 @@ func TestPostUnmarshalTaskWithLocalVolumes(t *testing.T) {
 		},
 	}
 	seqNum := int64(42)
-	task, err := TaskFromACS(&taskFromACS, &ecsacs.PayloadMessage{SeqNum: &seqNum})
+	task, err := TaskFromACS(&taskFromACS, &ecsacs.PayloadInput{SeqNum: &seqNum})
 	assert.Nil(t, err, "Should be able to handle acs task")
 	assert.Equal(t, 2, len(task.Containers)) // before PostUnmarshalTask
 	cfg := config.Config{}
@@ -1525,7 +1525,7 @@ func TestPostUnmarshalTaskWithPIDSharing(t *testing.T) {
 		}
 
 		seqNum := int64(42)
-		task, err := TaskFromACS(&testTaskFromACS, &ecsacs.PayloadMessage{SeqNum: &seqNum})
+		task, err := TaskFromACS(&testTaskFromACS, &ecsacs.PayloadInput{SeqNum: &seqNum})
 		assert.NoError(t, err, "Should be able to handle acs task")
 		assert.Equal(t, aTest.PIDMode, task.getPIDMode())
 		assert.Equal(t, aTest.IPCMode, task.getIPCMode())
@@ -1560,7 +1560,7 @@ func TestNamespaceProvisionDependencyAndHostConfig(t *testing.T) {
 			},
 		}
 		seqNum := int64(42)
-		task, err := TaskFromACS(&taskFromACS, &ecsacs.PayloadMessage{SeqNum: &seqNum})
+		task, err := TaskFromACS(&taskFromACS, &ecsacs.PayloadInput{SeqNum: &seqNum})
 		assert.Nil(t, err, "Should be able to handle acs task")
 		assert.Equal(t, aTest.PIDMode, task.getPIDMode())
 		assert.Equal(t, aTest.IPCMode, task.getIPCMode())
@@ -1904,7 +1904,7 @@ func TestTaskFromACS(t *testing.T) {
 	}
 
 	seqNum := int64(42)
-	task, err := TaskFromACS(&taskFromAcs, &ecsacs.PayloadMessage{SeqNum: &seqNum})
+	task, err := TaskFromACS(&taskFromAcs, &ecsacs.PayloadInput{SeqNum: &seqNum})
 
 	assert.NoError(t, err)
 	assert.EqualValues(t, expectedTask, task)
@@ -2244,7 +2244,7 @@ func TestTaskFromACSWithOverrides(t *testing.T) {
 	}
 
 	seqNum := int64(42)
-	task, err := TaskFromACS(&taskFromACS, &ecsacs.PayloadMessage{SeqNum: &seqNum})
+	task, err := TaskFromACS(&taskFromACS, &ecsacs.PayloadInput{SeqNum: &seqNum})
 	assert.Nil(t, err, "Should be able to handle acs task")
 	assert.Equal(t, 2, len(task.Containers)) // before PostUnmarshalTask
 
@@ -3828,7 +3828,7 @@ func TestTaskFromACSPerContainerTimeouts(t *testing.T) {
 		},
 	}
 	seqNum := int64(42)
-	task, err := TaskFromACS(&taskFromACS, &ecsacs.PayloadMessage{SeqNum: &seqNum})
+	task, err := TaskFromACS(&taskFromACS, &ecsacs.PayloadInput{SeqNum: &seqNum})
 	assert.Nil(t, err, "Should be able to handle acs task")
 
 	assert.Equal(t, task.Containers[0].StartTimeout, expectedTimeout)
@@ -3840,7 +3840,7 @@ func TestTaskFromACSPerContainerTimeouts(t *testing.T) {
 func TestTaskFromACSServiceNameMissing(t *testing.T) {
 	taskFromACS := ecsacs.Task{} // No service name
 	seqNum := int64(42)
-	task, err := TaskFromACS(&taskFromACS, &ecsacs.PayloadMessage{SeqNum: &seqNum})
+	task, err := TaskFromACS(&taskFromACS, &ecsacs.PayloadInput{SeqNum: &seqNum})
 	assert.Nil(t, err, "Should be able to handle acs task")
 	assert.Equal(t, task.ServiceName, "")
 }
@@ -4094,7 +4094,7 @@ func TestPostUnmarshalTaskWithOptions(t *testing.T) {
 		Version:       strptr("1"),
 	}
 	seqNum := int64(42)
-	task, err := TaskFromACS(&taskFromACS, &ecsacs.PayloadMessage{SeqNum: &seqNum})
+	task, err := TaskFromACS(&taskFromACS, &ecsacs.PayloadInput{SeqNum: &seqNum})
 	assert.Nil(t, err, "Should be able to handle acs task")
 	numCalls := 0
 	opt := func(optTask *Task) error {
@@ -4211,7 +4211,7 @@ func TestPostUnmarshalTaskWithServiceConnectAWSVPCMode(t *testing.T) {
 		},
 	}
 	seqNum := int64(42)
-	task, err := TaskFromACS(&taskFromACS, &ecsacs.PayloadMessage{SeqNum: &seqNum})
+	task, err := TaskFromACS(&taskFromACS, &ecsacs.PayloadInput{SeqNum: &seqNum})
 	testSCConfig := serviceconnect.Config{
 		ContainerName: serviceConnectContainerTestName,
 		IngressConfig: []serviceconnect.IngressConfigEntry{
@@ -4281,7 +4281,7 @@ func TestPostUnmarshalTaskWithServiceConnectBridgeMode(t *testing.T) {
 		},
 	}
 	seqNum := int64(42)
-	task, err := TaskFromACS(&taskFromACS, &ecsacs.PayloadMessage{SeqNum: &seqNum})
+	task, err := TaskFromACS(&taskFromACS, &ecsacs.PayloadInput{SeqNum: &seqNum})
 	testSCConfig := serviceconnect.Config{
 		ContainerName: serviceConnectContainerTestName,
 		IngressConfig: []serviceconnect.IngressConfigEntry{
@@ -4520,7 +4520,7 @@ func TestTaskFromACS_InitNetworkMode(t *testing.T) {
 			},
 		}
 		seqNum := int64(42)
-		task, err := TaskFromACS(&taskFromACS, &ecsacs.PayloadMessage{SeqNum: &seqNum})
+		task, err := TaskFromACS(&taskFromACS, &ecsacs.PayloadInput{SeqNum: &seqNum})
 		assert.Nil(t, err, "Should be able to handle acs task")
 		assert.Equal(t, tc.expectedTaskNetworkMode, task.NetworkMode)
 		switch tc.inputNetworkMode {
@@ -4693,7 +4693,7 @@ func TestTaskServiceConnectAttachment(t *testing.T) {
 				},
 				NetworkMode: strptr(tc.testNetworkMode),
 			}
-			task, err := TaskFromACS(&taskFromACS, &ecsacs.PayloadMessage{SeqNum: &seqNum})
+			task, err := TaskFromACS(&taskFromACS, &ecsacs.PayloadInput{SeqNum: &seqNum})
 			assert.Nil(t, err, "Should be able to handle acs task")
 			assert.Equal(t, tc.testNetworkMode, task.NetworkMode)
 			assert.Equal(t, tc.testExpectedSCConfig, task.ServiceConnectConfig)
@@ -4723,7 +4723,7 @@ func TestTaskWithoutServiceConnectAttachment(t *testing.T) {
 		NetworkMode: strptr(BridgeNetworkMode),
 	}
 
-	task, err := TaskFromACS(&taskFromACS, &ecsacs.PayloadMessage{SeqNum: &seqNum})
+	task, err := TaskFromACS(&taskFromACS, &ecsacs.PayloadInput{SeqNum: &seqNum})
 	assert.Nil(t, err, "Should be able to handle acs task")
 	assert.Equal(t, BridgeNetworkMode, task.NetworkMode)
 	assert.Nil(t, task.ServiceConnectConfig, "Should be no service connect config")
@@ -4800,7 +4800,7 @@ func TestTaskWithEBSVolumeAttachment(t *testing.T) {
 		FileSystem:           "ext4",
 	}
 
-	task, err := TaskFromACS(&taskFromACS, &ecsacs.PayloadMessage{SeqNum: &seqNum})
+	task, err := TaskFromACS(&taskFromACS, &ecsacs.PayloadInput{SeqNum: &seqNum})
 	assert.Nil(t, err, "Should be able to handle acs task")
 	assert.Len(t, task.Containers, 1)
 	assert.Len(t, task.Volumes, 1)

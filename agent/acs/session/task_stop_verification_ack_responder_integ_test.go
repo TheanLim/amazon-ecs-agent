@@ -52,8 +52,8 @@ func TestTaskStopVerificationACKResponder_StopsTaskContainersAndResources(t *tes
 	taskStopper := session.NewTaskStopper(taskEngine, data.NewNoopClient())
 	responder := acssession.NewTaskStopVerificationACKResponder(taskStopper, manifestMessageIDAccessor, metrics.NewNopEntryFactory())
 
-	handler := responder.HandlerFunc().(func(*ecsacs.TaskStopVerificationAck))
-	handler(&ecsacs.TaskStopVerificationAck{
+	handler := responder.HandlerFunc().(func(*ecsacs.TaskStopVerificationOutput))
+	handler(&ecsacs.TaskStopVerificationOutput{
 		GeneratedAt: aws.Int64(testconst.DummyInt),
 		MessageId:   aws.String(manifestMessageIDAccessor.GetMessageID()),
 		StopTasks:   []*ecsacs.TaskIdentifier{{TaskArn: aws.String(task.Arn)}},
@@ -106,8 +106,8 @@ func TestTaskStopVerificationACKResponder_StopsSpecificTasks(t *testing.T) {
 	responder := acssession.NewTaskStopVerificationACKResponder(taskStopper, manifestMessageIDAccessor, metrics.NewNopEntryFactory())
 
 	// Stop the last 2 tasks.
-	handler := responder.HandlerFunc().(func(*ecsacs.TaskStopVerificationAck))
-	handler(&ecsacs.TaskStopVerificationAck{
+	handler := responder.HandlerFunc().(func(*ecsacs.TaskStopVerificationOutput))
+	handler(&ecsacs.TaskStopVerificationOutput{
 		GeneratedAt: aws.Int64(testconst.DummyInt),
 		MessageId:   aws.String(manifestMessageIDAccessor.GetMessageID()),
 		StopTasks: []*ecsacs.TaskIdentifier{
@@ -185,8 +185,8 @@ func TestTaskStopVerificationACKResponder(t *testing.T) {
 			taskStopper := session.NewTaskStopper(taskEngine, data.NewNoopClient())
 			responder := acssession.NewTaskStopVerificationACKResponder(taskStopper, manifestMessageIDAccessor, metrics.NewNopEntryFactory())
 
-			handler := responder.HandlerFunc().(func(*ecsacs.TaskStopVerificationAck))
-			handler(&ecsacs.TaskStopVerificationAck{
+			handler := responder.HandlerFunc().(func(*ecsacs.TaskStopVerificationOutput))
+			handler(&ecsacs.TaskStopVerificationOutput{
 				GeneratedAt: aws.Int64(testconst.DummyInt),
 				MessageId:   aws.String(manifestMessageIDAccessor.GetMessageID()),
 				StopTasks: []*ecsacs.TaskIdentifier{

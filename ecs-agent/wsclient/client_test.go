@@ -336,15 +336,15 @@ func TestAddRequestPayloadHandler(t *testing.T) {
 	mockServer, _, _, _, _ := utils.GetMockServer(closeWS)
 	mockServer.StartTLS()
 
-	types := []interface{}{ecsacs.PayloadMessage{}}
+	types := []interface{}{ecsacs.PayloadInput{}}
 	messageError := make(chan error)
 	cs := getTestClientServer(mockServer.URL, types, 1)
 	cs.conn = conn
 
 	defer cs.Close()
 
-	messageChannel := make(chan *ecsacs.PayloadMessage)
-	reqHandler := func(payload *ecsacs.PayloadMessage) {
+	messageChannel := make(chan *ecsacs.PayloadInput)
+	reqHandler := func(payload *ecsacs.PayloadInput) {
 		messageChannel <- payload
 	}
 	cs.AddRequestHandler(reqHandler)
@@ -354,7 +354,7 @@ func TestAddRequestPayloadHandler(t *testing.T) {
 		cs.Close()
 	}()
 
-	expectedMessage := &ecsacs.PayloadMessage{
+	expectedMessage := &ecsacs.PayloadInput{
 		Tasks: []*ecsacs.Task{{
 			Arn: aws.String("arn"),
 		}},
@@ -380,7 +380,7 @@ func TestMakeUnrecognizedRequest(t *testing.T) {
 	mockServer, _, _, _, _ := utils.GetMockServer(closeWS)
 	mockServer.StartTLS()
 
-	types := []interface{}{ecsacs.PayloadMessage{}}
+	types := []interface{}{ecsacs.PayloadInput{}}
 	cs := getTestClientServer(mockServer.URL, types, 1)
 	cs.conn = conn
 
@@ -404,7 +404,7 @@ func TestWriteCloseMessage(t *testing.T) {
 	mockServer, _, _, errChan, _ := utils.GetMockServer(closeWS)
 	mockServer.StartTLS()
 
-	types := []interface{}{ecsacs.PayloadMessage{}}
+	types := []interface{}{ecsacs.PayloadInput{}}
 	cs := getTestClientServer(mockServer.URL, types, 1)
 	cs.Connect(mockDisconnectTimeoutMetricName, DisconnectTimeout, DisconnectJitterMax)
 

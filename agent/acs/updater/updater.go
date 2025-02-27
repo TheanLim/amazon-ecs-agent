@@ -95,8 +95,8 @@ func (u *updater) AddAgentUpdateHandlers(cs wsclient.ClientServer) {
 	cs.AddRequestHandler(u.performUpdateHandler())
 }
 
-func (u *updater) stageUpdateHandler() func(req *ecsacs.StageUpdateMessage) {
-	return func(req *ecsacs.StageUpdateMessage) {
+func (u *updater) stageUpdateHandler() func(req *ecsacs.StageUpdateInput) {
+	return func(req *ecsacs.StageUpdateInput) {
 		u.Lock()
 		defer u.Unlock()
 
@@ -107,7 +107,7 @@ func (u *updater) stageUpdateHandler() func(req *ecsacs.StageUpdateMessage) {
 
 		nack := func(reason string) {
 			seelog.Errorf("Nacking StageUpdate; reason: %s", reason)
-			u.acs.MakeRequest(&ecsacs.NackRequest{
+			u.acs.MakeRequest(&ecsacs.UpdateFailureInput{
 				Cluster:           req.ClusterArn,
 				ContainerInstance: req.ContainerInstanceArn,
 				MessageId:         req.MessageId,
@@ -144,7 +144,7 @@ func (u *updater) stageUpdateHandler() func(req *ecsacs.StageUpdateMessage) {
 			} else {
 				// Nack previous update
 				reason := "New update arrived: " + *req.MessageId
-				u.acs.MakeRequest(&ecsacs.NackRequest{
+				u.acs.MakeRequest(&ecsacs.UpdateFailureInput{
 					Cluster:           req.ClusterArn,
 					ContainerInstance: req.ContainerInstanceArn,
 					MessageId:         &u.downloadMessageID,
@@ -228,8 +228,8 @@ func (u *updater) download(info *ecsacs.UpdateInfo) (err error) {
 
 var exit = os.Exit
 
-func (u *updater) performUpdateHandler() func(req *ecsacs.PerformUpdateMessage) {
-	return func(req *ecsacs.PerformUpdateMessage) {
+func (u *updater) performUpdateHandler() func(req *ecsacs.PerformUpdateInput) {
+	return func(req *ecsacs.PerformUpdateInput) {
 		u.Lock()
 		defer u.Unlock()
 
@@ -238,7 +238,7 @@ func (u *updater) performUpdateHandler() func(req *ecsacs.PerformUpdateMessage) 
 		if !u.config.UpdatesEnabled.Enabled() {
 			reason := "Updates are disabled"
 			seelog.Errorf("Nacking PerformUpdate; reason: %s", reason)
-			u.acs.MakeRequest(&ecsacs.NackRequest{
+			u.acs.MakeRequest(&ecsacs.UpdateFailureInput{
 				Cluster:           req.ClusterArn,
 				ContainerInstance: req.ContainerInstanceArn,
 				MessageId:         req.MessageId,
@@ -250,7 +250,7 @@ func (u *updater) performUpdateHandler() func(req *ecsacs.PerformUpdateMessage) 
 		if u.stage != updateDownloaded {
 			seelog.Error("Nacking PerformUpdate; not downloaded")
 			reason := "Cannot perform update; update not downloaded"
-			u.acs.MakeRequest(&ecsacs.NackRequest{
+			u.acs.MakeRequest(&ecsacs.UpdateFailureInput{
 				Cluster:           req.ClusterArn,
 				ContainerInstance: req.ContainerInstanceArn,
 				MessageId:         req.MessageId,

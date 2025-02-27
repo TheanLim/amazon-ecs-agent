@@ -112,7 +112,7 @@ func TestPostUnmarshalWindowsCanonicalPaths(t *testing.T) {
 	}
 
 	seqNum := int64(42)
-	task, err := TaskFromACS(&taskFromAcs, &ecsacs.PayloadMessage{SeqNum: &seqNum})
+	task, err := TaskFromACS(&taskFromAcs, &ecsacs.PayloadInput{SeqNum: &seqNum})
 	assert.Nil(t, err, "Should be able to handle acs task")
 	cfg := config.Config{TaskCPUMemLimit: config.BooleanDefaultTrue{Value: config.ExplicitlyDisabled}}
 	task.PostUnmarshalTask(&cfg, nil, nil, nil, nil)
@@ -510,7 +510,7 @@ func TestPostUnmarshalTaskWithFSxWindowsFileServerVolumes(t *testing.T) {
 		},
 	}
 	seqNum := int64(42)
-	task, err := TaskFromACS(&taskFromACS, &ecsacs.PayloadMessage{SeqNum: &seqNum})
+	task, err := TaskFromACS(&taskFromACS, &ecsacs.PayloadInput{SeqNum: &seqNum})
 	assert.Nil(t, err, "Should be able to handle acs task")
 	assert.Equal(t, 1, len(task.Containers)) // before PostUnmarshalTask
 

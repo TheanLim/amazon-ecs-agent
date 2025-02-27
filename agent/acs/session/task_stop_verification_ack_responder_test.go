@@ -87,8 +87,8 @@ func defaultTasksOnInstance() map[string]*task.Task {
 }
 
 // defaultTaskStopVerificationAck returns a baseline task stop verification ACK to be used in testing.
-func defaultTaskStopVerificationAck() *ecsacs.TaskStopVerificationAck {
-	return &ecsacs.TaskStopVerificationAck{
+func defaultTaskStopVerificationAck() *ecsacs.TaskStopVerificationOutput {
+	return &ecsacs.TaskStopVerificationOutput{
 		GeneratedAt: aws.Int64(testconst.DummyInt),
 		MessageId:   aws.String(testconst.MessageID),
 		StopTasks:   []*ecsacs.TaskIdentifier{},
@@ -125,7 +125,7 @@ func TestTaskStopVerificationAckResponderStopsMultipleTasks(t *testing.T) {
 	mockTaskEngineExpectUpdateTaskWithArnAndDesiredStatus(t, tester, tasksOnInstance, taskARN3, apitaskstatus.TaskStopped)
 
 	handleTaskStopVerificationAck :=
-		tester.taskStopVerificationAckResponder.HandlerFunc().(func(message *ecsacs.TaskStopVerificationAck))
+		tester.taskStopVerificationAckResponder.HandlerFunc().(func(message *ecsacs.TaskStopVerificationOutput))
 	handleTaskStopVerificationAck(taskStopVerificationAck)
 
 	// Only task2 and task3 and their containers should be stopped.
@@ -181,7 +181,7 @@ func TestTaskStopVerificationAckResponderStopsAllTasks(t *testing.T) {
 	mockTaskEngineExpectUpdateTaskWithArnAndDesiredStatus(t, tester, tasksOnInstance, taskARN3, apitaskstatus.TaskStopped)
 
 	handleTaskStopVerificationAck :=
-		tester.taskStopVerificationAckResponder.HandlerFunc().(func(message *ecsacs.TaskStopVerificationAck))
+		tester.taskStopVerificationAckResponder.HandlerFunc().(func(message *ecsacs.TaskStopVerificationOutput))
 	handleTaskStopVerificationAck(taskStopVerificationAck)
 
 	// All tasks and containers on instance should be stopped.

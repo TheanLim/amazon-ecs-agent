@@ -96,14 +96,14 @@ func TestStageUpdateWithUpdatesDisabled(t *testing.T) {
 	})
 	defer ctrl.Finish()
 
-	mockacs.EXPECT().MakeRequest(&nackRequestMatcher{&ecsacs.NackRequest{
+	mockacs.EXPECT().MakeRequest(&updateFailureInputMatcher{&ecsacs.UpdateFailureInput{
 		Cluster:           ptr("cluster").(*string),
 		ContainerInstance: ptr("containerInstance").(*string),
 		MessageId:         ptr("mid").(*string),
 		Reason:            ptr("Updates are disabled").(*string),
 	}})
 
-	u.stageUpdateHandler()(&ecsacs.StageUpdateMessage{
+	u.stageUpdateHandler()(&ecsacs.StageUpdateInput{
 		ClusterArn:           ptr("cluster").(*string),
 		ContainerInstanceArn: ptr("containerInstance").(*string),
 		MessageId:            ptr("mid").(*string),
@@ -121,14 +121,14 @@ func TestPerformUpdateWithUpdatesDisabled(t *testing.T) {
 	})
 	defer ctrl.Finish()
 
-	mockacs.EXPECT().MakeRequest(&nackRequestMatcher{&ecsacs.NackRequest{
+	mockacs.EXPECT().MakeRequest(&updateFailureInputMatcher{&ecsacs.UpdateFailureInput{
 		Cluster:           ptr("cluster").(*string),
 		ContainerInstance: ptr("containerInstance").(*string),
 		MessageId:         ptr("mid").(*string),
 		Reason:            ptr("Updates are disabled").(*string),
 	}})
 
-	msg := &ecsacs.PerformUpdateMessage{
+	msg := &ecsacs.PerformUpdateInput{
 		ClusterArn:           ptr("cluster").(*string),
 		ContainerInstanceArn: ptr("containerInstance").(*string),
 		MessageId:            ptr("mid").(*string),
@@ -169,7 +169,7 @@ func TestFullUpdateFlow(t *testing.T) {
 				})),
 			)
 
-			u.stageUpdateHandler()(&ecsacs.StageUpdateMessage{
+			u.stageUpdateHandler()(&ecsacs.StageUpdateInput{
 				ClusterArn:           ptr("cluster").(*string),
 				ContainerInstanceArn: ptr("containerInstance").(*string),
 				MessageId:            ptr("mid").(*string),
@@ -181,7 +181,7 @@ func TestFullUpdateFlow(t *testing.T) {
 
 			require.Equal(t, "update-tar-data", writtenFile.String(), "incorrect data written")
 
-			msg := &ecsacs.PerformUpdateMessage{
+			msg := &ecsacs.PerformUpdateInput{
 				ClusterArn:           ptr("cluster").(*string),
 				ContainerInstanceArn: ptr("containerInstance").(*string),
 				MessageId:            ptr("mid2").(*string),
@@ -196,12 +196,12 @@ func TestFullUpdateFlow(t *testing.T) {
 	}
 }
 
-type nackRequestMatcher struct {
-	*ecsacs.NackRequest
+type updateFailureInputMatcher struct {
+	*ecsacs.UpdateFailureInput
 }
 
-func (m *nackRequestMatcher) Matches(nack interface{}) bool {
-	other := nack.(*ecsacs.NackRequest)
+func (m *updateFailureInputMatcher) Matches(nack interface{}) bool {
+	other := nack.(*ecsacs.UpdateFailureInput)
 	if m.Cluster != nil && *m.Cluster != *other.Cluster {
 		return false
 	}
@@ -221,34 +221,34 @@ func TestMissingUpdateInfo(t *testing.T) {
 	u, ctrl, mockacs, _ := mocks(t, nil)
 	defer ctrl.Finish()
 
-	mockacs.EXPECT().MakeRequest(&nackRequestMatcher{&ecsacs.NackRequest{
+	mockacs.EXPECT().MakeRequest(&updateFailureInputMatcher{&ecsacs.UpdateFailureInput{
 		Cluster:           ptr("cluster").(*string),
 		ContainerInstance: ptr("containerInstance").(*string),
 		MessageId:         ptr("mid").(*string),
 	}})
 
-	u.stageUpdateHandler()(&ecsacs.StageUpdateMessage{
+	u.stageUpdateHandler()(&ecsacs.StageUpdateInput{
 		ClusterArn:           ptr("cluster").(*string),
 		ContainerInstanceArn: ptr("containerInstance").(*string),
 		MessageId:            ptr("mid").(*string),
 	})
 }
 
-func (m *nackRequestMatcher) String() string {
-	return fmt.Sprintf("Nack request matcher %v", m.NackRequest)
+func (m *updateFailureInputMatcher) String() string {
+	return fmt.Sprintf("Nack request matcher %v", m.UpdateFailureInput)
 }
 
 func TestUndownloadedUpdate(t *testing.T) {
 	u, ctrl, mockacs, _ := mocks(t, nil)
 	defer ctrl.Finish()
 
-	mockacs.EXPECT().MakeRequest(&nackRequestMatcher{&ecsacs.NackRequest{
+	mockacs.EXPECT().MakeRequest(&updateFailureInputMatcher{&ecsacs.UpdateFailureInput{
 		Cluster:           ptr("cluster").(*string),
 		ContainerInstance: ptr("containerInstance").(*string),
 		MessageId:         ptr("mid").(*string),
 	}})
 
-	msg := &ecsacs.PerformUpdateMessage{
+	msg := &ecsacs.PerformUpdateInput{
 		ClusterArn:           ptr("cluster").(*string),
 		ContainerInstanceArn: ptr("containerInstance").(*string),
 		MessageId:            ptr("mid").(*string),
@@ -281,7 +281,7 @@ func TestDuplicateUpdateMessagesWithSuccess(t *testing.T) {
 		})),
 	)
 
-	u.stageUpdateHandler()(&ecsacs.StageUpdateMessage{
+	u.stageUpdateHandler()(&ecsacs.StageUpdateInput{
 		ClusterArn:           ptr("cluster").(*string),
 		ContainerInstanceArn: ptr("containerInstance").(*string),
 		MessageId:            ptr("mid").(*string),
@@ -293,7 +293,7 @@ func TestDuplicateUpdateMessagesWithSuccess(t *testing.T) {
 
 	// Multiple requests to stage something with the same signature should still
 	// result in only one download / update procedure.
-	u.stageUpdateHandler()(&ecsacs.StageUpdateMessage{
+	u.stageUpdateHandler()(&ecsacs.StageUpdateInput{
 		ClusterArn:           ptr("cluster").(*string),
 		ContainerInstanceArn: ptr("containerInstance").(*string),
 		MessageId:            ptr("mid2").(*string),
@@ -305,7 +305,7 @@ func TestDuplicateUpdateMessagesWithSuccess(t *testing.T) {
 
 	require.Equal(t, "update-tar-data", writtenFile.String(), "incorrect data written")
 
-	msg := &ecsacs.PerformUpdateMessage{
+	msg := &ecsacs.PerformUpdateInput{
 		ClusterArn:           ptr("cluster").(*string),
 		ContainerInstanceArn: ptr("containerInstance").(*string),
 		MessageId:            ptr("mid3").(*string),
@@ -324,7 +324,7 @@ func TestDuplicateUpdateMessagesWithFailure(t *testing.T) {
 
 	gomock.InOrder(
 		mockhttp.EXPECT().RoundTrip(mock_http.NewHTTPSimpleMatcher("GET", "https://s3.amazonaws.com/amazon-ecs-agent/update.tar")).Return(mock_http.SuccessResponse("update-tar-data"), nil),
-		mockacs.EXPECT().MakeRequest(gomock.Eq(&ecsacs.NackRequest{
+		mockacs.EXPECT().MakeRequest(gomock.Eq(&ecsacs.UpdateFailureInput{
 			Cluster:           ptr("cluster").(*string),
 			ContainerInstance: ptr("containerInstance").(*string),
 			MessageId:         ptr("mid").(*string),
@@ -347,7 +347,7 @@ func TestDuplicateUpdateMessagesWithFailure(t *testing.T) {
 		return nil, errors.New("test error")
 	}
 
-	u.stageUpdateHandler()(&ecsacs.StageUpdateMessage{
+	u.stageUpdateHandler()(&ecsacs.StageUpdateInput{
 		ClusterArn:           ptr("cluster").(*string),
 		ContainerInstanceArn: ptr("containerInstance").(*string),
 		MessageId:            ptr("mid").(*string),
@@ -361,7 +361,7 @@ func TestDuplicateUpdateMessagesWithFailure(t *testing.T) {
 
 	// Multiple requests to stage something with the same signature where the previous update failed
 	// should cause another update attempt to be started
-	u.stageUpdateHandler()(&ecsacs.StageUpdateMessage{
+	u.stageUpdateHandler()(&ecsacs.StageUpdateInput{
 		ClusterArn:           ptr("cluster").(*string),
 		ContainerInstanceArn: ptr("containerInstance").(*string),
 		MessageId:            ptr("mid2").(*string),
@@ -373,7 +373,7 @@ func TestDuplicateUpdateMessagesWithFailure(t *testing.T) {
 
 	require.Equal(t, "update-tar-data", writtenFile.String(), "incorrect data written")
 
-	msg := &ecsacs.PerformUpdateMessage{
+	msg := &ecsacs.PerformUpdateInput{
 		ClusterArn:           ptr("cluster").(*string),
 		ContainerInstanceArn: ptr("containerInstance").(*string),
 		MessageId:            ptr("mid3").(*string),
@@ -398,7 +398,7 @@ func TestNewerUpdateMessages(t *testing.T) {
 			ContainerInstance: ptr("containerInstance").(*string),
 			MessageId:         ptr("StageMID").(*string),
 		})),
-		mockacs.EXPECT().MakeRequest(&nackRequestMatcher{&ecsacs.NackRequest{
+		mockacs.EXPECT().MakeRequest(&updateFailureInputMatcher{&ecsacs.UpdateFailureInput{
 			Cluster:           ptr("cluster").(*string),
 			ContainerInstance: ptr("containerInstance").(*string),
 			MessageId:         ptr("StageMID").(*string),
@@ -417,7 +417,7 @@ func TestNewerUpdateMessages(t *testing.T) {
 		})),
 	)
 
-	u.stageUpdateHandler()(&ecsacs.StageUpdateMessage{
+	u.stageUpdateHandler()(&ecsacs.StageUpdateInput{
 		ClusterArn:           ptr("cluster").(*string),
 		ContainerInstanceArn: ptr("containerInstance").(*string),
 		MessageId:            ptr("StageMID").(*string),
@@ -431,7 +431,7 @@ func TestNewerUpdateMessages(t *testing.T) {
 	writtenFile.Reset()
 
 	// Never perform, make sure a new hash results in a new stage
-	u.stageUpdateHandler()(&ecsacs.StageUpdateMessage{
+	u.stageUpdateHandler()(&ecsacs.StageUpdateInput{
 		ClusterArn:           ptr("cluster").(*string),
 		ContainerInstanceArn: ptr("containerInstance").(*string),
 		MessageId:            ptr("StageMIDNew").(*string),
@@ -443,7 +443,7 @@ func TestNewerUpdateMessages(t *testing.T) {
 
 	require.Equal(t, "newer-update-tar-data", writtenFile.String(), "incorrect data written")
 
-	msg := &ecsacs.PerformUpdateMessage{
+	msg := &ecsacs.PerformUpdateInput{
 		ClusterArn:           ptr("cluster").(*string),
 		ContainerInstanceArn: ptr("containerInstance").(*string),
 		MessageId:            ptr("mid2").(*string),
@@ -463,14 +463,14 @@ func TestValidationError(t *testing.T) {
 	defer mockOS()()
 	gomock.InOrder(
 		mockhttp.EXPECT().RoundTrip(mock_http.NewHTTPSimpleMatcher("GET", "https://s3.amazonaws.com/amazon-ecs-agent/update.tar")).Return(mock_http.SuccessResponse("update-tar-data"), nil),
-		mockacs.EXPECT().MakeRequest(&nackRequestMatcher{&ecsacs.NackRequest{
+		mockacs.EXPECT().MakeRequest(&updateFailureInputMatcher{&ecsacs.UpdateFailureInput{
 			Cluster:           ptr("cluster").(*string),
 			ContainerInstance: ptr("containerInstance").(*string),
 			MessageId:         ptr("StageMID").(*string),
 		}}),
 	)
 
-	u.stageUpdateHandler()(&ecsacs.StageUpdateMessage{
+	u.stageUpdateHandler()(&ecsacs.StageUpdateInput{
 		ClusterArn:           ptr("cluster").(*string),
 		ContainerInstanceArn: ptr("containerInstance").(*string),
 		MessageId:            ptr("StageMID").(*string),

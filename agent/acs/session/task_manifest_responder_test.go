@@ -79,8 +79,8 @@ func setupTaskManifestTest(t *testing.T, acsResponseSender wsclient.RespondFunc)
 }
 
 // defaultTaskManifestMessage returns a baseline task manifest message to be used in testing.
-func defaultTaskManifestMessage() *ecsacs.TaskManifestMessage {
-	return &ecsacs.TaskManifestMessage{
+func defaultTaskManifestMessage() *ecsacs.TaskManifestInput {
+	return &ecsacs.TaskManifestInput{
 		MessageId:            aws.String(testconst.MessageID),
 		ClusterArn:           aws.String(testconst.ClusterARN),
 		ContainerInstanceArn: aws.String(testconst.ContainerInstanceARN),
@@ -90,8 +90,8 @@ func defaultTaskManifestMessage() *ecsacs.TaskManifestMessage {
 }
 
 // defaultTaskStopVerificationMessage returns a baseline task stop verification message to be used in testing.
-func defaultTaskStopVerificationMessage() *ecsacs.TaskStopVerificationMessage {
-	return &ecsacs.TaskStopVerificationMessage{
+func defaultTaskStopVerificationMessage() *ecsacs.TaskStopVerificationInput {
+	return &ecsacs.TaskStopVerificationInput{
 		MessageId:      aws.String(testconst.MessageID),
 		StopCandidates: []*ecsacs.TaskIdentifier{},
 	}
@@ -103,8 +103,8 @@ func TestTaskManifestResponder(t *testing.T) {
 	testCases := []struct {
 		name                     string
 		tasksInEngine            []*task.Task
-		taskManifestMsgMutation  func(message *ecsacs.TaskManifestMessage)
-		taskStopVerifMsgMutation func(message *ecsacs.TaskStopVerificationMessage)
+		taskManifestMsgMutation  func(message *ecsacs.TaskManifestInput)
+		taskStopVerifMsgMutation func(message *ecsacs.TaskStopVerificationInput)
 	}{
 		{
 			name: "All tasks to be stopped",
@@ -112,7 +112,7 @@ func TestTaskManifestResponder(t *testing.T) {
 				{Arn: taskARN1, DesiredStatusUnsafe: apitaskstatus.TaskRunning},
 				{Arn: taskARN2, DesiredStatusUnsafe: apitaskstatus.TaskRunning},
 			},
-			taskManifestMsgMutation: func(message *ecsacs.TaskManifestMessage) {
+			taskManifestMsgMutation: func(message *ecsacs.TaskManifestInput) {
 				message.Tasks = []*ecsacs.TaskIdentifier{
 					{
 						DesiredStatus:  aws.String(apitaskstatus.TaskStoppedString),
@@ -121,7 +121,7 @@ func TestTaskManifestResponder(t *testing.T) {
 					},
 				}
 			},
-			taskStopVerifMsgMutation: func(message *ecsacs.TaskStopVerificationMessage) {
+			taskStopVerifMsgMutation: func(message *ecsacs.TaskStopVerificationInput) {
 				message.StopCandidates = []*ecsacs.TaskIdentifier{
 					{
 						DesiredStatus:  aws.String(apitaskstatus.TaskStoppedString),
@@ -143,7 +143,7 @@ func TestTaskManifestResponder(t *testing.T) {
 				{Arn: taskARN2, DesiredStatusUnsafe: apitaskstatus.TaskRunning},
 				{Arn: taskARN3, DesiredStatusUnsafe: apitaskstatus.TaskRunning},
 			},
-			taskManifestMsgMutation: func(message *ecsacs.TaskManifestMessage) {
+			taskManifestMsgMutation: func(message *ecsacs.TaskManifestInput) {
 				message.Tasks = []*ecsacs.TaskIdentifier{
 					{
 						DesiredStatus:  aws.String(apitaskstatus.TaskRunningString),
@@ -157,7 +157,7 @@ func TestTaskManifestResponder(t *testing.T) {
 					},
 				}
 			},
-			taskStopVerifMsgMutation: func(message *ecsacs.TaskStopVerificationMessage) {
+			taskStopVerifMsgMutation: func(message *ecsacs.TaskStopVerificationInput) {
 				message.StopCandidates = []*ecsacs.TaskIdentifier{
 					{
 						DesiredStatus:  aws.String(apitaskstatus.TaskStoppedString),
@@ -178,7 +178,7 @@ func TestTaskManifestResponder(t *testing.T) {
 				{Arn: taskARN1, DesiredStatusUnsafe: apitaskstatus.TaskRunning},
 				{Arn: taskARN2, DesiredStatusUnsafe: apitaskstatus.TaskRunning},
 			},
-			taskManifestMsgMutation: func(message *ecsacs.TaskManifestMessage) {
+			taskManifestMsgMutation: func(message *ecsacs.TaskManifestInput) {
 				message.Tasks = []*ecsacs.TaskIdentifier{
 					{
 						DesiredStatus:  aws.String(apitaskstatus.TaskRunningString),
@@ -187,7 +187,7 @@ func TestTaskManifestResponder(t *testing.T) {
 					},
 				}
 			},
-			taskStopVerifMsgMutation: func(message *ecsacs.TaskStopVerificationMessage) {
+			taskStopVerifMsgMutation: func(message *ecsacs.TaskStopVerificationInput) {
 				message.StopCandidates = []*ecsacs.TaskIdentifier{
 					{
 						DesiredStatus:  aws.String(apitaskstatus.TaskStoppedString),
@@ -202,17 +202,17 @@ func TestTaskManifestResponder(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			var taskManifestAckSent *ecsacs.AckRequest
-			var taskStopVerificationSent *ecsacs.TaskStopVerificationMessage
+			var taskStopVerificationSent *ecsacs.TaskStopVerificationInput
 			testResponseSender := func(response interface{}) error {
 				messageAck, isTaskManifestAck := response.(*ecsacs.AckRequest)
 				if isTaskManifestAck {
 					taskManifestAckSent = messageAck
 				} else {
-					stopVerif, isTaskStopVerification := response.(*ecsacs.TaskStopVerificationMessage)
+					stopVerif, isTaskStopVerification := response.(*ecsacs.TaskStopVerificationInput)
 					if isTaskStopVerification {
 						taskStopVerificationSent = stopVerif
 					} else {
-						t.Fatal("response does not hold type ecsacs.AckRequest or ecsacs.TaskStopVerificationMessage")
+						t.Fatal("response does not hold type ecsacs.AckRequest or ecsacs.TaskStopVerificationInput")
 					}
 				}
 				return nil
@@ -233,7 +233,7 @@ func TestTaskManifestResponder(t *testing.T) {
 			tc.taskStopVerifMsgMutation(expectedTaskStopVerification)
 
 			handleTaskManifestMessage :=
-				tester.taskManifestResponder.HandlerFunc().(func(message *ecsacs.TaskManifestMessage))
+				tester.taskManifestResponder.HandlerFunc().(func(message *ecsacs.TaskManifestInput))
 			handleTaskManifestMessage(message)
 
 			// Verify that task manifest message ACK is as expected.
@@ -260,11 +260,11 @@ func TestTaskManifestResponderNoTasksToBeStopped(t *testing.T) {
 		if isTaskManifestAck {
 			taskManifestAckSent = messageAck
 		} else {
-			_, isTaskStopVerification := response.(*ecsacs.TaskStopVerificationMessage)
+			_, isTaskStopVerification := response.(*ecsacs.TaskStopVerificationInput)
 			if isTaskStopVerification {
 				taskStopVerificationWasSent = true
 			} else {
-				t.Fatal("response does not hold type ecsacs.AckRequest or ecsacs.TaskStopVerificationMessage")
+				t.Fatal("response does not hold type ecsacs.AckRequest or ecsacs.TaskStopVerificationInput")
 			}
 		}
 		return nil
@@ -299,7 +299,7 @@ func TestTaskManifestResponderNoTasksToBeStopped(t *testing.T) {
 	// NOTE: There are no tasks that need to be stopped for this test case.
 
 	handleTaskManifestMessage :=
-		tester.taskManifestResponder.HandlerFunc().(func(message *ecsacs.TaskManifestMessage))
+		tester.taskManifestResponder.HandlerFunc().(func(message *ecsacs.TaskManifestInput))
 	handleTaskManifestMessage(message)
 
 	// Verify that task manifest message ACK is sent and is as expected.
@@ -343,11 +343,11 @@ func TestTaskManifestResponderStaleMessage(t *testing.T) {
 				if isTaskManifestAck {
 					taskManifestAckWasSent = true
 				} else {
-					_, isTaskStopVerification := response.(*ecsacs.TaskStopVerificationMessage)
+					_, isTaskStopVerification := response.(*ecsacs.TaskStopVerificationInput)
 					if isTaskStopVerification {
 						taskStopVerificationWasSent = true
 					} else {
-						t.Fatal("response does not hold type ecsacs.AckRequest or ecsacs.TaskStopVerificationMessage")
+						t.Fatal("response does not hold type ecsacs.AckRequest or ecsacs.TaskStopVerificationInput")
 					}
 				}
 				return nil
@@ -364,7 +364,7 @@ func TestTaskManifestResponderStaleMessage(t *testing.T) {
 				metrics.NewNopEntryFactory(),
 				testResponseSender)
 
-			message := &ecsacs.TaskManifestMessage{
+			message := &ecsacs.TaskManifestInput{
 				MessageId:            aws.String(testconst.MessageID),
 				ClusterArn:           aws.String(testconst.ClusterARN),
 				ContainerInstanceArn: aws.String(testconst.ContainerInstanceARN),
@@ -388,7 +388,7 @@ func TestTaskManifestResponderStaleMessage(t *testing.T) {
 			taskEngine.EXPECT().ListTasks().Return(taskList, nil).Times(0)
 
 			handleTaskManifestMessage :=
-				taskManifestResponder.HandlerFunc().(func(message *ecsacs.TaskManifestMessage))
+				taskManifestResponder.HandlerFunc().(func(message *ecsacs.TaskManifestInput))
 			handleTaskManifestMessage(message)
 
 			// Verify that task manifest message ACK was not sent (task manifest message was ignored/discarded).
@@ -413,7 +413,7 @@ func TestCompareTasksAllDifferentTasks(t *testing.T) {
 
 	taskEngine := mock_engine.NewMockTaskEngine(ctrl)
 
-	message := &ecsacs.TaskManifestMessage{
+	message := &ecsacs.TaskManifestInput{
 		MessageId:            aws.String(testconst.MessageID),
 		ClusterArn:           aws.String(testconst.ClusterARN),
 		ContainerInstanceArn: aws.String(testconst.ContainerInstanceARN),
@@ -449,7 +449,7 @@ func TestCompareTasksAllSameTasks(t *testing.T) {
 
 	taskEngine := mock_engine.NewMockTaskEngine(ctrl)
 
-	message := &ecsacs.TaskManifestMessage{
+	message := &ecsacs.TaskManifestInput{
 		MessageId:            aws.String(testconst.MessageID),
 		ClusterArn:           aws.String(testconst.ClusterARN),
 		ContainerInstanceArn: aws.String(testconst.ContainerInstanceARN),

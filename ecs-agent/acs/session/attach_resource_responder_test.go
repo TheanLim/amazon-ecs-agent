@@ -95,7 +95,7 @@ var (
 		AttachmentArn:        aws.String(testAttachmentArn),
 		AttachmentProperties: testAttachmentProperties,
 	}
-	testConfirmAttachmentMessage = &ecsacs.ConfirmAttachmentMessage{
+	testConfirmAttachmentMessage = &ecsacs.ConfirmAttachmentInput{
 		Attachment:           testAttachment,
 		MessageId:            aws.String(testconst.MessageID),
 		ClusterArn:           aws.String(testClusterArn),
@@ -288,7 +288,7 @@ func TestResourceAckHappyPath(t *testing.T) {
 		mockMetricsFactory,
 		testResponseSender)
 
-	handleAttachMessage := testResourceResponder.HandlerFunc().(func(*ecsacs.ConfirmAttachmentMessage))
+	handleAttachMessage := testResourceResponder.HandlerFunc().(func(*ecsacs.ConfirmAttachmentInput))
 	go handleAttachMessage(&confirmAttachmentMessageCopy)
 
 	attachResourceAckSent := <-ackSent

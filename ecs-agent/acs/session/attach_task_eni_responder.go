@@ -33,7 +33,7 @@ const (
 )
 
 // attachTaskENIResponder implements the wsclient.RequestResponder interface for responding
-// to ecsacs.AttachTaskNetworkInterfacesMessage messages sent by ACS.
+// to ecsacs.AttachTaskNetworkInterfacesInput messages sent by ACS.
 type attachTaskENIResponder struct {
 	eniHandler ENIHandler
 	respond    wsclient.RespondFunc
@@ -54,7 +54,7 @@ func (r *attachTaskENIResponder) HandlerFunc() wsclient.RequestHandler {
 	return r.handleAttachMessage
 }
 
-func (r *attachTaskENIResponder) handleAttachMessage(message *ecsacs.AttachTaskNetworkInterfacesMessage) {
+func (r *attachTaskENIResponder) handleAttachMessage(message *ecsacs.AttachTaskNetworkInterfacesInput) {
 	logger.Debug(fmt.Sprintf("Handling %s", AttachTaskENIMessageName))
 	receivedAt := time.Now()
 
@@ -121,7 +121,7 @@ func (r *attachTaskENIResponder) handleTaskENIFromMessage(eni *ecsacs.ElasticNet
 
 // validateAttachTaskNetworkInterfacesMessage performs validation checks on the
 // AttachTaskNetworkInterfacesMessage.
-func validateAttachTaskNetworkInterfacesMessage(message *ecsacs.AttachTaskNetworkInterfacesMessage) error {
+func validateAttachTaskNetworkInterfacesMessage(message *ecsacs.AttachTaskNetworkInterfacesInput) error {
 	if message == nil {
 		return errors.Errorf("Message is empty")
 	}

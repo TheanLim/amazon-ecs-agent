@@ -34,7 +34,7 @@ const (
 // TaskComparer gets and compares running tasks on an instance to those in the ACS manifest.
 // It should be implemented by an underlying struct that has access to such data.
 type TaskComparer interface {
-	CompareRunningTasksOnInstanceWithManifest(*ecsacs.TaskManifestMessage) ([]*ecsacs.TaskIdentifier, error)
+	CompareRunningTasksOnInstanceWithManifest(*ecsacs.TaskManifestInput) ([]*ecsacs.TaskIdentifier, error)
 }
 
 // SequenceNumberAccessor is used to get and set state for the current container
@@ -80,7 +80,7 @@ func (tmr *taskManifestResponder) HandlerFunc() wsclient.RequestHandler {
 
 // handleTaskManifestMessage is the high level caller to handle a task manifest message from ACS.
 // It will kick off the call stack of processTaskManifestMessage calling ack and send TaskManifestMessage
-func (tmr *taskManifestResponder) handleTaskManifestMessage(message *ecsacs.TaskManifestMessage) {
+func (tmr *taskManifestResponder) handleTaskManifestMessage(message *ecsacs.TaskManifestInput) {
 	messageID := aws.ToString(message.MessageId)
 	logger.Debug(fmt.Sprintf("Processing %s", TaskManifestMessageName), logger.Fields{
 		field.MessageID: messageID,
@@ -100,7 +100,7 @@ func (tmr *taskManifestResponder) handleTaskManifestMessage(message *ecsacs.Task
 // whether a task manifest message is stale or not. If not, it proceeds to create a
 // list of stop candidates.
 func (tmr *taskManifestResponder) processTaskManifestMessage(
-	message *ecsacs.TaskManifestMessage) error {
+	message *ecsacs.TaskManifestInput) error {
 	messageID := aws.ToString(message.MessageId)
 	manifestSeqNum := aws.ToInt64(message.Timeline)
 	agentLatestSeqNum := tmr.snAccessor.GetLatestSequenceNumber()
@@ -155,7 +155,7 @@ func (tmr *taskManifestResponder) processTaskManifestMessage(
 	return nil
 }
 
-func (tmr *taskManifestResponder) ackTaskManifestMessage(message *ecsacs.TaskManifestMessage) {
+func (tmr *taskManifestResponder) ackTaskManifestMessage(message *ecsacs.TaskManifestInput) {
 	messageID := aws.ToString(message.MessageId)
 	logger.Debug(fmt.Sprintf("acknowledging %s", TaskManifestMessageName), logger.Fields{field.MessageID: messageID})
 	err := tmr.respond(&ecsacs.AckRequest{
@@ -172,7 +172,7 @@ func (tmr *taskManifestResponder) ackTaskManifestMessage(message *ecsacs.TaskMan
 }
 
 // If there are stop candidates, send a TaskStopVerificationMessage to ACS and log each stop candidate.
-func (tmr *taskManifestResponder) sendTaskStopVerification(message *ecsacs.TaskManifestMessage, tasksToStop []*ecsacs.TaskIdentifier) {
+func (tmr *taskManifestResponder) sendTaskStopVerification(message *ecsacs.TaskManifestInput, tasksToStop []*ecsacs.TaskIdentifier) {
 	messageID := aws.ToString(message.MessageId)
 	if len(tasksToStop) == 0 {
 		return
@@ -186,7 +186,7 @@ func (tmr *taskManifestResponder) sendTaskStopVerification(message *ecsacs.TaskM
 		field.MessageID: messageID,
 		field.TaskARN:   taskARNList,
 	})
-	err := tmr.respond(&ecsacs.TaskStopVerificationMessage{
+	err := tmr.respond(&ecsacs.TaskStopVerificationInput{
 		MessageId:      message.MessageId,
 		StopCandidates: tasksToStop,
 	})
