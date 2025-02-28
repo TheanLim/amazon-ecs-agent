@@ -22,6 +22,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	ecsacs "github.com/aws/aws-sdk-go-v2/service/acs"
+	"github.com/aws/aws-sdk-go-v2/service/acs/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
@@ -29,7 +30,7 @@ import (
 var testStopVerificationAck = &ecsacs.TaskStopVerificationOutput{
 	GeneratedAt: aws.Int64(testconst.DummyInt),
 	MessageId:   aws.String(testconst.MessageID),
-	StopTasks: []*ecsacs.TaskIdentifier{
+	StopTasks: []types.TaskIdentifier{
 		{
 			TaskArn:        aws.String(testconst.TaskARN),
 			TaskClusterArn: aws.String(testconst.ClusterARN),

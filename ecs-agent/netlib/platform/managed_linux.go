@@ -17,7 +17,7 @@ import (
 	"github.com/aws/amazon-ecs-agent/ecs-agent/netlib/model/tasknetworkconfig"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	ecsacs "github.com/aws/aws-sdk-go-v2/service/acs"
+	"github.com/aws/aws-sdk-go-v2/service/acs/types"
 	"github.com/pkg/errors"
 )
 
@@ -38,7 +38,7 @@ type managedLinux struct {
 // into the task network configuration data structure internal to the agent.
 func (m *managedLinux) BuildTaskNetworkConfiguration(
 	taskID string,
-	taskPayload *ecsacs.Task,
+	taskPayload *types.Task,
 ) (*tasknetworkconfig.TaskNetworkConfig, error) {
 	mode := aws.ToString(taskPayload.NetworkMode)
 	var netNSs []*tasknetworkconfig.NetworkNamespace
@@ -106,10 +106,10 @@ func (m *managedLinux) buildDefaultNetworkNamespace(taskID string) ([]*tasknetwo
 		return nil, err
 	}
 
-	hostENI := &ecsacs.ElasticNetworkInterface{
+	hostENI := &types.ElasticNetworkInterface{
 		AttachmentArn: aws.String("arn"),
 		Ec2Id:         aws.String(ec2ID),
-		Ipv4Addresses: []*ecsacs.IPv4AddressAssignment{
+		Ipv4Addresses: []types.IPv4AddressAssignment{
 			{
 				Primary:        aws.Bool(true),
 				PrivateAddress: aws.String(privateIpv4),
@@ -117,11 +117,11 @@ func (m *managedLinux) buildDefaultNetworkNamespace(taskID string) ([]*tasknetwo
 		},
 		SubnetGatewayIpv4Address:     aws.String(subNet),
 		MacAddress:                   aws.String(macAddress),
-		DomainNameServers:            []*string{},
-		DomainName:                   []*string{},
+		DomainNameServers:            []string{},
+		DomainName:                   []string{},
 		PrivateDnsName:               aws.String(DefaultArg),
-		InterfaceAssociationProtocol: aws.String(DefaultArg),
-		Index:                        aws.Int64(64),
+		InterfaceAssociationProtocol: types.NetworkInterfaceAssociationProtocolDefault,
+		Index:                        aws.Int32(64),
 	}
 
 	netNSName := networkinterface.NetNSName(taskID, DefaultArg)

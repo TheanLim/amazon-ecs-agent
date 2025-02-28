@@ -17,7 +17,7 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	ecsacs "github.com/aws/aws-sdk-go-v2/service/acs"
+	"github.com/aws/aws-sdk-go-v2/service/acs/types"
 )
 
 const (
@@ -55,18 +55,18 @@ type AppMesh struct {
 }
 
 // AppMeshFromACS validates proxy config if it is app mesh type and creates AppMesh object
-func AppMeshFromACS(proxyConfig *ecsacs.ProxyConfiguration) (*AppMesh, error) {
+func AppMeshFromACS(proxyConfig *types.ProxyConfiguration) (*AppMesh, error) {
 
-	if *proxyConfig.Type != appMesh {
+	if string(proxyConfig.Type) != appMesh {
 		return nil, fmt.Errorf("agent does not support proxy type other than app mesh")
 	}
 
 	return &AppMesh{
 		ContainerName:      aws.ToString(proxyConfig.ContainerName),
-		IgnoredUID:         aws.ToString(proxyConfig.Properties[ignoredUID]),
-		IgnoredGID:         aws.ToString(proxyConfig.Properties[ignoredGID]),
-		ProxyIngressPort:   aws.ToString(proxyConfig.Properties[proxyIngressPort]),
-		ProxyEgressPort:    aws.ToString(proxyConfig.Properties[proxyEgressPort]),
+		IgnoredUID:         proxyConfig.Properties[ignoredUID],
+		IgnoredGID:         proxyConfig.Properties[ignoredGID],
+		ProxyIngressPort:   proxyConfig.Properties[proxyIngressPort],
+		ProxyEgressPort:    proxyConfig.Properties[proxyEgressPort],
 		AppPorts:           buildAppPorts(proxyConfig),
 		EgressIgnoredIPs:   buildEgressIgnoredIPs(proxyConfig),
 		EgressIgnoredPorts: buildEgressIgnoredPorts(proxyConfig),
@@ -74,29 +74,29 @@ func AppMeshFromACS(proxyConfig *ecsacs.ProxyConfiguration) (*AppMesh, error) {
 }
 
 // buildAppPorts creates app ports from proxy config
-func buildAppPorts(proxyConfig *ecsacs.ProxyConfiguration) []string {
+func buildAppPorts(proxyConfig *types.ProxyConfiguration) []string {
 	var inputAppPorts []string
-	if proxyConfig.Properties[appPorts] != nil && len(*proxyConfig.Properties[appPorts]) > 0 {
-		inputAppPorts = strings.Split(*proxyConfig.Properties[appPorts], splitter)
+	if ports, exists := proxyConfig.Properties[appPorts]; exists && len(ports) > 0 {
+		inputAppPorts = strings.Split(ports, splitter)
 	}
 	return inputAppPorts
 }
 
 // buildEgressIgnoredIPs creates egress ignored IPs from proxy config
-func buildEgressIgnoredIPs(proxyConfig *ecsacs.ProxyConfiguration) []string {
+func buildEgressIgnoredIPs(proxyConfig *types.ProxyConfiguration) []string {
 	var inputEgressIgnoredIPs []string
-	if proxyConfig.Properties[egressIgnoredIPs] != nil && len(*proxyConfig.Properties[egressIgnoredIPs]) > 0 {
-		inputEgressIgnoredIPs = strings.Split(*proxyConfig.Properties[egressIgnoredIPs], splitter)
+	if ignoredIPs, exists := proxyConfig.Properties[egressIgnoredIPs]; exists && len(ignoredIPs) > 0 {
+		inputEgressIgnoredIPs = strings.Split(ignoredIPs, splitter)
 	}
 	// append agent default egress ignored IPs
 	return appendDefaultEgressIgnoredIPs(inputEgressIgnoredIPs)
 }
 
 // buildEgressIgnoredPorts creates egress ignored ports from proxy config
-func buildEgressIgnoredPorts(proxyConfig *ecsacs.ProxyConfiguration) []string {
+func buildEgressIgnoredPorts(proxyConfig *types.ProxyConfiguration) []string {
 	var inputEgressIgnoredPorts []string
-	if proxyConfig.Properties[egressIgnoredPorts] != nil && len(*proxyConfig.Properties[egressIgnoredPorts]) > 0 {
-		inputEgressIgnoredPorts = strings.Split(*proxyConfig.Properties[egressIgnoredPorts], splitter)
+	if ignoredPorts, exists := proxyConfig.Properties[egressIgnoredPorts]; exists && len(ignoredPorts) > 0 {
+		inputEgressIgnoredPorts = strings.Split(ignoredPorts, splitter)
 	}
 	return inputEgressIgnoredPorts
 }

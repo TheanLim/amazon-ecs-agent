@@ -17,7 +17,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/aws/amazon-ecs-agent/ecs-agent/acs/model/ecsacs"
 	"github.com/aws/amazon-ecs-agent/ecs-agent/api/attachment"
 	"github.com/aws/amazon-ecs-agent/ecs-agent/logger"
 	"github.com/aws/amazon-ecs-agent/ecs-agent/logger/field"
@@ -26,6 +25,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	ecsacs "github.com/aws/aws-sdk-go-v2/service/acs"
+	"github.com/aws/aws-sdk-go-v2/service/acs/types"
 	"github.com/pkg/errors"
 )
 
@@ -74,7 +74,7 @@ func (r *attachInstanceENIResponder) handleAttachMessage(message *ecsacs.AttachI
 	containerInstanceARN := aws.ToString(message.ContainerInstanceArn)
 	waitTimeoutMs := aws.ToInt64(message.WaitTimeoutMs)
 	for _, mENI := range message.ElasticNetworkInterfaces {
-		go r.handleInstanceENIFromMessage(mENI, messageID, clusterARN, containerInstanceARN, receivedAt, waitTimeoutMs)
+		go r.handleInstanceENIFromMessage(&mENI, messageID, clusterARN, containerInstanceARN, receivedAt, waitTimeoutMs)
 	}
 
 	// Send ACK.
@@ -95,7 +95,7 @@ func (r *attachInstanceENIResponder) handleAttachMessage(message *ecsacs.AttachI
 
 // handleInstanceENIFromMessage handles the attachment of a given instance ENI from an
 // AttachInstanceNetworkInterfacesMessage.
-func (r *attachInstanceENIResponder) handleInstanceENIFromMessage(eni *ecsacs.ElasticNetworkInterface,
+func (r *attachInstanceENIResponder) handleInstanceENIFromMessage(eni *types.ElasticNetworkInterface,
 	messageID, clusterARN, containerInstanceARN string, receivedAt time.Time, waitTimeoutMs int64) {
 	expiresAt := receivedAt.Add(time.Duration(waitTimeoutMs) * time.Millisecond)
 	err := r.eniHandler.HandleENIAttachment(&ni.ENIAttachment{

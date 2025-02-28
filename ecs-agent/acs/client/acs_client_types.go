@@ -20,6 +20,14 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/acs/types"
 )
 
+// But we still import using ecsacs.AckRequest
+// One solution is to adding a acs/model/ecsacs/types.go and import accordingly
+type AckRequest struct {
+	Cluster *string
+	ContainerInstance *string
+	MessageId *string
+}
+
 var acsRecognizedTypes []interface{}
 
 func init() {
@@ -35,7 +43,7 @@ func init() {
 		ecsacs.HeartbeatOutput{},
 		ecsacs.PayloadInput{},
 		ecsacs.PollOutput{},
-		ecsacs.AckRequest{}, // maps to multiple ops output. likely we need to specify one by one
+		AckRequest{},
 		ecsacs.UpdateFailureInput{},
 		ecsacs.PerformUpdateInput{},
 		ecsacs.StageUpdateInput{},
@@ -54,7 +62,6 @@ func init() {
 		ecsacs.TaskManifestInput{},
 		ecsacs.TaskStopVerificationOutput{},
 		ecsacs.TaskStopVerificationInput{},
-		// need to add more like UpdateInfo
 	}
 }
 

@@ -90,7 +90,7 @@ func (r *refreshCredentialsResponder) handleCredentialsMessage(message *ecsacs.R
 	err = r.credentialsManager.SetTaskCredentials(&credentials.TaskIAMRoleCredentials{
 		ARN: taskARN,
 		IAMRoleCredentials: credentials.IAMRoleCredentialsFromACS(message.RoleCredentials,
-			aws.ToString(message.RoleType)),
+			string(message.RoleType)),
 	})
 	if err != nil {
 		logger.Error(fmt.Sprintf("Unable to handle %s due to error in setting credentials",
@@ -133,7 +133,7 @@ func (r *refreshCredentialsResponder) handleCredentialsMessage(message *ecsacs.R
 }
 
 func (r *refreshCredentialsResponder) setCredentialsMetadata(message *ecsacs.RefreshTaskIAMRoleCredentialsInput) error {
-	roleType := aws.ToString(message.RoleType)
+	roleType := string(message.RoleType)
 	switch roleType {
 	case credentials.ApplicationRoleType:
 		err := r.credsMetadataSetter.SetTaskRoleCredentialsMetadata(message)
@@ -176,7 +176,7 @@ func validateIAMRoleCredentialsMessage(message *ecsacs.RefreshTaskIAMRoleCredent
 		return errors.Errorf("roleCredentials ID not set for message ID %s", messageID)
 	}
 
-	roleType := aws.ToString(message.RoleType)
+	roleType := string(message.RoleType)
 	if !validRoleType(roleType) {
 		return errors.Errorf("roleType \"%s\" is invalid for message ID %s with taskArn %s", roleType, messageID,
 			taskArn)

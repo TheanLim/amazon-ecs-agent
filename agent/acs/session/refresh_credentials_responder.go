@@ -62,7 +62,7 @@ func (cmSetter *credentialsMetadataSetter) SetExecRoleCredentialsMetadata(
 
 	// Refresh domainless gMSA plugin credentials if needed.
 	err = checkAndSetDomainlessGMSATaskExecutionRoleCredentialsImpl(credentials.IAMRoleCredentialsFromACS(
-		message.RoleCredentials, aws.ToString(message.RoleType)), task)
+		message.RoleCredentials, string(message.RoleType)), task)
 	if err != nil {
 		return errors.Wrap(err, fmt.Sprintf("unable to set %s for task with ARN %s",
 			"DomainlessGMSATaskExecutionRoleCredentials", aws.ToString(message.TaskArn)))
