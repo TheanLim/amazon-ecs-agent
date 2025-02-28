@@ -34,7 +34,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/credentials"
-	ecsacs "github.com/aws/aws-sdk-go-v2/service/acs"
+	"github.com/aws/aws-sdk-go-v2/service/acs"
 	"github.com/golang/mock/gomock"
 	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/assert"
@@ -58,7 +58,7 @@ func TestClientProxy(t *testing.T) {
 	os.Setenv("HTTP_PROXY", proxy_url)
 	defer os.Unsetenv("HTTP_PROXY")
 
-	types := []interface{}{ecsacs.AckRequest{}}
+	types := []interface{}{acs.AckRequest{}}
 	cs := getTestClientServer("http://www.amazon.com", types, 1)
 	_, err := cs.Connect(mockDisconnectTimeoutMetricName, DisconnectTimeout, DisconnectJitterMax)
 	assert.Error(t, err)
@@ -85,9 +85,9 @@ func TestConcurrentWritesDontPanic(t *testing.T) {
 		}
 		waitForRequests.Done()
 	}()
-	req := ecsacs.AckRequest{Cluster: aws.String("test"), ContainerInstance: aws.String("test"), MessageId: aws.String("test")}
+	req := acs.AckRequest{Cluster: aws.String("test"), ContainerInstance: aws.String("test"), MessageId: aws.String("test")}
 
-	types := []interface{}{ecsacs.AckRequest{}}
+	types := []interface{}{acs.AckRequest{}}
 	cs := getTestClientServer(mockServer.URL, types, 1)
 	timer, err := cs.Connect(mockDisconnectTimeoutMetricName, DisconnectTimeout, DisconnectJitterMax)
 	require.NoError(t, err)
@@ -139,7 +139,7 @@ func TestProxyVariableCustomValue(t *testing.T) {
 
 	testString := "Custom no proxy string"
 	os.Setenv("NO_PROXY", testString)
-	types := []interface{}{ecsacs.AckRequest{}}
+	types := []interface{}{acs.AckRequest{}}
 	timer, err := getTestClientServer(mockServer.URL, types, 1).Connect(mockDisconnectTimeoutMetricName, DisconnectTimeout, DisconnectJitterMax)
 	require.NoError(t, err)
 	defer timer.Stop()
@@ -158,7 +158,7 @@ func TestProxyVariableDefaultValue(t *testing.T) {
 	defer mockServer.Close()
 
 	os.Unsetenv("NO_PROXY")
-	types := []interface{}{ecsacs.AckRequest{}}
+	types := []interface{}{acs.AckRequest{}}
 	timer, err := getTestClientServer(mockServer.URL, types, 1).Connect(mockDisconnectTimeoutMetricName, DisconnectTimeout, DisconnectJitterMax)
 	require.NoError(t, err)
 	defer timer.Stop()
@@ -179,7 +179,7 @@ func TestHandleMessagePermissibleCloseCode(t *testing.T) {
 	mockServer, _, _, _, _ := utils.GetMockServer(closeWS)
 	mockServer.StartTLS()
 
-	types := []interface{}{ecsacs.AckRequest{}}
+	types := []interface{}{acs.AckRequest{}}
 	cs := getTestClientServer(mockServer.URL, types, 1)
 	timer, err := cs.Connect(mockDisconnectTimeoutMetricName, DisconnectTimeout, DisconnectJitterMax)
 	require.NoError(t, err)
@@ -205,7 +205,7 @@ func TestHandleMessageUnexpectedCloseCode(t *testing.T) {
 	mockServer, _, _, _, _ := utils.GetMockServer(closeWS)
 	mockServer.StartTLS()
 
-	types := []interface{}{ecsacs.AckRequest{}}
+	types := []interface{}{acs.AckRequest{}}
 	cs := getTestClientServer(mockServer.URL, types, 1)
 	timer, err := cs.Connect(mockDisconnectTimeoutMetricName, DisconnectTimeout, DisconnectJitterMax)
 	require.NoError(t, err)
@@ -232,7 +232,7 @@ func TestHandleNonHTTPSEndpoint(t *testing.T) {
 	mockServer.Start()
 	defer mockServer.Close()
 
-	types := []interface{}{ecsacs.AckRequest{}}
+	types := []interface{}{acs.AckRequest{}}
 	cs := getTestClientServer(mockServer.URL, types, 1)
 	timer, err := cs.Connect(mockDisconnectTimeoutMetricName, DisconnectTimeout, DisconnectJitterMax)
 	require.NoError(t, err)
@@ -240,7 +240,7 @@ func TestHandleNonHTTPSEndpoint(t *testing.T) {
 
 	assert.True(t, cs.IsReady(), "expected websocket connection to be ready")
 
-	req := ecsacs.AckRequest{Cluster: aws.String("test"), ContainerInstance: aws.String("test"), MessageId: aws.String("test")}
+	req := acs.AckRequest{Cluster: aws.String("test"), ContainerInstance: aws.String("test"), MessageId: aws.String("test")}
 	cs.MakeRequest(&req)
 
 	t.Log("Waiting for single request to be visible server-side")
@@ -260,7 +260,7 @@ func TestHandleIncorrectURLScheme(t *testing.T) {
 	mockServerURL, _ := url.Parse(mockServer.URL)
 	mockServerURL.Scheme = "notaparticularlyrealscheme"
 
-	types := []interface{}{ecsacs.AckRequest{}}
+	types := []interface{}{acs.AckRequest{}}
 	cs := getTestClientServer(mockServerURL.String(), types, 1)
 	_, err := cs.Connect(mockDisconnectTimeoutMetricName, DisconnectTimeout, DisconnectJitterMax)
 	assert.Error(t, err, "Expected error for incorrect URL scheme")
@@ -336,15 +336,15 @@ func TestAddRequestPayloadHandler(t *testing.T) {
 	mockServer, _, _, _, _ := utils.GetMockServer(closeWS)
 	mockServer.StartTLS()
 
-	types := []interface{}{ecsacs.PayloadInput{}}
+	types := []interface{}{acs.PayloadInput{}}
 	messageError := make(chan error)
 	cs := getTestClientServer(mockServer.URL, types, 1)
 	cs.conn = conn
 
 	defer cs.Close()
 
-	messageChannel := make(chan *ecsacs.PayloadInput)
-	reqHandler := func(payload *ecsacs.PayloadInput) {
+	messageChannel := make(chan *acs.PayloadInput)
+	reqHandler := func(payload *acs.PayloadInput) {
 		messageChannel <- payload
 	}
 	cs.AddRequestHandler(reqHandler)
@@ -354,8 +354,8 @@ func TestAddRequestPayloadHandler(t *testing.T) {
 		cs.Close()
 	}()
 
-	expectedMessage := &ecsacs.PayloadInput{
-		Tasks: []*ecsacs.Task{{
+	expectedMessage := &acs.PayloadInput{
+		Tasks: []*types.Task{{
 			Arn: aws.String("arn"),
 		}},
 	}
@@ -380,7 +380,7 @@ func TestMakeUnrecognizedRequest(t *testing.T) {
 	mockServer, _, _, _, _ := utils.GetMockServer(closeWS)
 	mockServer.StartTLS()
 
-	types := []interface{}{ecsacs.PayloadInput{}}
+	types := []interface{}{acs.PayloadInput{}}
 	cs := getTestClientServer(mockServer.URL, types, 1)
 	cs.conn = conn
 
@@ -404,7 +404,7 @@ func TestWriteCloseMessage(t *testing.T) {
 	mockServer, _, _, errChan, _ := utils.GetMockServer(closeWS)
 	mockServer.StartTLS()
 
-	types := []interface{}{ecsacs.PayloadInput{}}
+	types := []interface{}{acs.PayloadInput{}}
 	cs := getTestClientServer(mockServer.URL, types, 1)
 	cs.Connect(mockDisconnectTimeoutMetricName, DisconnectTimeout, DisconnectJitterMax)
 
@@ -427,7 +427,7 @@ func TestCtxCancel(t *testing.T) {
 	mockServer, _, _, _, _ := utils.GetMockServer(closeWS)
 	mockServer.StartTLS()
 
-	types := []interface{}{ecsacs.AckRequest{}}
+	types := []interface{}{acs.AckRequest{}}
 	cs := getTestClientServer(mockServer.URL, types, 2)
 	timer, err := cs.Connect(mockDisconnectTimeoutMetricName, DisconnectTimeout, DisconnectJitterMax)
 	require.NoError(t, err)
@@ -453,7 +453,7 @@ func TestPeriodicDisconnect(t *testing.T) {
 
 	messageError := make(chan error)
 	ctx := context.Background()
-	types := []interface{}{ecsacs.AckRequest{}}
+	types := []interface{}{acs.AckRequest{}}
 
 	// Setting a higher rwtimeout to allow disconnect due to periodic timeouts.
 	cs := getTestClientServer(mockServer.URL, types, 20)

@@ -34,7 +34,8 @@ import (
 	ni "github.com/aws/amazon-ecs-agent/ecs-agent/netlib/model/networkinterface"
 	eautils "github.com/aws/amazon-ecs-agent/ecs-agent/utils"
 
-	ecsacs "github.com/aws/aws-sdk-go-v2/service/acs"
+	"github.com/aws/aws-sdk-go-v2/service/acs"
+	"github.com/aws/aws-sdk-go-v2/service/acs/types"
 	dockercontainer "github.com/docker/docker/api/types/container"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -56,15 +57,15 @@ const (
 func TestPostUnmarshalWindowsCanonicalPaths(t *testing.T) {
 	// Testing type conversions, bleh. At least the type conversion itself
 	// doesn't look this messy.
-	taskFromAcs := ecsacs.Task{
+	taskFromAcs := types.Task{
 		Arn:           strptr("myArn"),
 		DesiredStatus: strptr("RUNNING"),
 		Family:        strptr("myFamily"),
 		Version:       strptr("1"),
-		Containers: []*ecsacs.Container{
+		Containers: []*acs.Container{
 			{
 				Name: strptr("myName"),
-				MountPoints: []*ecsacs.MountPoint{
+				MountPoints: []*acs.MountPoint{
 					{
 						ContainerPath: strptr(`C:/Container/Path`),
 						SourceVolume:  strptr("sourceVolume"),
@@ -72,11 +73,11 @@ func TestPostUnmarshalWindowsCanonicalPaths(t *testing.T) {
 				},
 			},
 		},
-		Volumes: []*ecsacs.Volume{
+		Volumes: []*acs.Volume{
 			{
 				Name: strptr("sourceVolume"),
 				Type: strptr("host"),
-				Host: &ecsacs.HostVolumeProperties{
+				Host: &acs.HostVolumeProperties{
 					SourcePath: strptr(`C:/Host/path`),
 				},
 			},
@@ -112,7 +113,7 @@ func TestPostUnmarshalWindowsCanonicalPaths(t *testing.T) {
 	}
 
 	seqNum := int64(42)
-	task, err := TaskFromACS(&taskFromAcs, &ecsacs.PayloadInput{SeqNum: &seqNum})
+	task, err := TaskFromACS(&taskFromAcs, &acs.PayloadInput{SeqNum: &seqNum})
 	assert.Nil(t, err, "Should be able to handle acs task")
 	cfg := config.Config{TaskCPUMemLimit: config.BooleanDefaultTrue{Value: config.ExplicitlyDisabled}}
 	task.PostUnmarshalTask(&cfg, nil, nil, nil, nil)
@@ -478,15 +479,15 @@ func TestInitializeAndAddFSxWindowsFileServerResource(t *testing.T) {
 }
 
 func TestPostUnmarshalTaskWithFSxWindowsFileServerVolumes(t *testing.T) {
-	taskFromACS := ecsacs.Task{
+	taskFromACS := types.Task{
 		Arn:           strptr("myArn"),
 		DesiredStatus: strptr("RUNNING"),
 		Family:        strptr("myFamily"),
 		Version:       strptr("1"),
-		Containers: []*ecsacs.Container{
+		Containers: []*acs.Container{
 			{
 				Name: strptr("myName1"),
-				MountPoints: []*ecsacs.MountPoint{
+				MountPoints: []*acs.MountPoint{
 					{
 						ContainerPath: strptr("\\some\\path"),
 						SourceVolume:  strptr("fsxWindowsFileServerVolume"),
@@ -494,12 +495,12 @@ func TestPostUnmarshalTaskWithFSxWindowsFileServerVolumes(t *testing.T) {
 				},
 			},
 		},
-		Volumes: []*ecsacs.Volume{
+		Volumes: []*acs.Volume{
 			{
 				Name: strptr("fsxWindowsFileServerVolume"),
 				Type: strptr("fsxWindowsFileServer"),
-				FsxWindowsFileServerVolumeConfiguration: &ecsacs.FSxWindowsFileServerVolumeConfiguration{
-					AuthorizationConfig: &ecsacs.FSxWindowsFileServerAuthorizationConfig{
+				FsxWindowsFileServerVolumeConfiguration: &acs.FSxWindowsFileServerVolumeConfiguration{
+					AuthorizationConfig: &acs.FSxWindowsFileServerAuthorizationConfig{
 						CredentialsParameter: strptr("arn"),
 						Domain:               strptr("test"),
 					},
@@ -510,7 +511,7 @@ func TestPostUnmarshalTaskWithFSxWindowsFileServerVolumes(t *testing.T) {
 		},
 	}
 	seqNum := int64(42)
-	task, err := TaskFromACS(&taskFromACS, &ecsacs.PayloadInput{SeqNum: &seqNum})
+	task, err := TaskFromACS(&taskFromACS, &acs.PayloadInput{SeqNum: &seqNum})
 	assert.Nil(t, err, "Should be able to handle acs task")
 	assert.Equal(t, 1, len(task.Containers)) // before PostUnmarshalTask
 

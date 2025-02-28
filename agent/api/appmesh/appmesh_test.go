@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	ecsacs "github.com/aws/aws-sdk-go-v2/service/acs"
+	"github.com/aws/aws-sdk-go-v2/service/acs"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -123,15 +123,15 @@ func TestAppMeshEmptyIgnoredPorts(t *testing.T) {
 	testProxyConfig := prepareProxyConfig()
 	testProxyConfig.Properties[egressIgnoredPorts] = &emptyIgnoredPorts
 
-	appMesh, err := AppMeshFromACS(&testProxyConfig)
+	appMesh, err := AppMeshFromACS(&testProxyConfig)∑
 
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(appMesh.EgressIgnoredPorts))
 }
 
-func prepareProxyConfig() ecsacs.ProxyConfiguration {
+func prepareProxyConfig() acs.ProxyConfiguration {
 
-	return ecsacs.ProxyConfiguration{
+	return acs.ProxyConfiguration{
 		Type: aws.String(appMesh),
 		Properties: map[string]*string{
 			ignoredUID:         aws.String(mockIgnoredUID),

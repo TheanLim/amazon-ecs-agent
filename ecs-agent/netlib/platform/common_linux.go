@@ -293,7 +293,7 @@ func (c *common) buildNetNS(
 	lowestIdx := int32(indexHighValue)
 	for _, ni := range networkInterfaces {
 		guestNetNS := ifaceToGuestNetNS[aws.ToString(ni.Name)]
-		iface, err := networkinterface.New(ni, guestNetNS, networkInterfaces, macToName)
+		iface, err := networkinterface.New(&ni, guestNetNS, networkInterfaces, macToName)
 		if err != nil {
 			return nil, err
 		}

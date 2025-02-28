@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	ecsacs "github.com/aws/aws-sdk-go-v2/service/acs"
+	"github.com/aws/aws-sdk-go-v2/service/acs"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
@@ -214,18 +214,20 @@ func TestValidateENIFromACS(t *testing.T) {
 }
 
 func TestInvalidENIInterfaceVlanPropertyMissing(t *testing.T) {
-	acsENI := &ecsacs.ElasticNetworkInterface{
+	acsENI := &acs.ElasticNetworkInterface{
 		InterfaceAssociationProtocol: aws.String(VLANInterfaceAssociationProtocol),
 		AttachmentArn:                aws.String("arn"),
 		Ec2Id:                        aws.String("ec2id"),
-		Ipv4Addresses: []*ecsacs.IPv4AddressAssignment{
+		Ipv4Addresses: []*acs
+.IPv4AddressAssignment{
 			{
 				Primary:        aws.Bool(true),
 				PrivateAddress: aws.String("ipv4"),
 			},
 		},
 		SubnetGatewayIpv4Address: aws.String(ipv4GwWithPrefixLength),
-		Ipv6Addresses: []*ecsacs.IPv6AddressAssignment{
+		Ipv6Addresses: []*acs
+.IPv6AddressAssignment{
 			{
 				Address: aws.String("ipv6"),
 			},
@@ -239,18 +241,20 @@ func TestInvalidENIInterfaceVlanPropertyMissing(t *testing.T) {
 }
 
 func TestInvalidENIInvalidInterfaceAssociationProtocol(t *testing.T) {
-	acsENI := &ecsacs.ElasticNetworkInterface{
+	acsENI := &acs.ElasticNetworkInterface{
 		InterfaceAssociationProtocol: aws.String("no-eni"),
 		AttachmentArn:                aws.String("arn"),
 		Ec2Id:                        aws.String("ec2id"),
-		Ipv4Addresses: []*ecsacs.IPv4AddressAssignment{
+		Ipv4Addresses: []*acs
+.IPv4AddressAssignment{
 			{
 				Primary:        aws.Bool(true),
 				PrivateAddress: aws.String("ipv4"),
 			},
 		},
 		SubnetGatewayIpv4Address: aws.String(ipv4GwWithPrefixLength),
-		Ipv6Addresses: []*ecsacs.IPv6AddressAssignment{
+		Ipv6Addresses: []*acs
+.IPv6AddressAssignment{
 			{
 				Address: aws.String("ipv6"),
 			},
@@ -268,18 +272,20 @@ func TestInvalidSubnetGatewayAddress(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func getTestACSENI() *ecsacs.ElasticNetworkInterface {
-	return &ecsacs.ElasticNetworkInterface{
+func getTestACSENI() *ac.ElasticNetworkInterface {
+	return &acs.ElasticNetworkInterface{
 		AttachmentArn: aws.String("arn"),
 		Ec2Id:         aws.String("ec2id"),
-		Ipv4Addresses: []*ecsacs.IPv4AddressAssignment{
+		Ipv4Addresses: []*acs
+.IPv4AddressAssignment{
 			{
 				Primary:        aws.Bool(true),
 				PrivateAddress: aws.String(ipv4Addr),
 			},
 		},
 		SubnetGatewayIpv4Address: aws.String(ipv4GwWithPrefixLength),
-		Ipv6Addresses: []*ecsacs.IPv6AddressAssignment{
+		Ipv6Addresses: []*acs
+.IPv6AddressAssignment{
 			{
 				Address: aws.String(ipv6Addr)},
 		},

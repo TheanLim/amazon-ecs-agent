@@ -27,7 +27,8 @@ import (
 	apiresource "github.com/aws/amazon-ecs-agent/ecs-agent/api/attachment/resource"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	ecsacs "github.com/aws/aws-sdk-go-v2/service/acs"
+	"github.com/aws/aws-sdk-go-v2/service/acs"
+	"github.com/aws/aws-sdk-go-v2/service/acs/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -42,16 +43,16 @@ var (
 	testIPv4CIDR                    = "127.255.0.0/16"
 	testIPv6                        = "abcd:dcba:1234:4321::"
 	testIPv6CIDR                    = "2002::1234:abcd:ffff:c0a8:101/64"
-	testIpv4ElasticNetworkInterface = &ecsacs.ElasticNetworkInterface{
-		Ipv4Addresses: []*ecsacs.IPv4AddressAssignment{
+	testIpv4ElasticNetworkInterface = &acs.ElasticNetworkInterface{
+		Ipv4Addresses: []*acs.IPv4AddressAssignment{
 			{
 				Primary:        aws.Bool(true),
 				PrivateAddress: aws.String(testIPv4),
 			},
 		},
 	}
-	testIpv6ElasticNetworkInterface = &ecsacs.ElasticNetworkInterface{
-		Ipv6Addresses: []*ecsacs.IPv6AddressAssignment{
+	testIpv6ElasticNetworkInterface = &acs.ElasticNetworkInterface{
+		Ipv6Addresses: []*acs.IPv6AddressAssignment{
 			{
 				Address: aws.String(testIPv6),
 			},
@@ -61,10 +62,10 @@ var (
 
 func stringToPointer(s string) *string { return &s }
 
-func getTestcontainerFromACS(containerName, networkMode string) *ecsacs.Container {
-	return &ecsacs.Container{
+func getTestcontainerFromACS(containerName, networkMode string) *acs.Container {
+	return &acs.Container{
 		Name: aws.String(containerName),
-		DockerConfig: &ecsacs.DockerConfig{
+		DockerConfig: &acs.DockerConfig{
 			HostConfig: aws.String(fmt.Sprintf(
 				`{"NetworkMode":"%s"}`, networkMode)),
 		},
@@ -158,15 +159,15 @@ func TestHandleTaskAttachmentsWithServiceConnectAttachment(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.testName, func(t *testing.T) {
-			testAcsTask := &ecsacs.Task{
-				ElasticNetworkInterfaces: []*ecsacs.ElasticNetworkInterface{testIpv6ElasticNetworkInterface},
-				Containers: []*ecsacs.Container{
+			testAcsTask := &types.Task{
+				ElasticNetworkInterfaces: []*acs.ElasticNetworkInterface{testIpv6ElasticNetworkInterface},
+				Containers: []*acs.Container{
 					getTestcontainerFromACS(testSCContainerName, AWSVPCNetworkMode),
 				},
-				Attachments: []*ecsacs.Attachment{
+				Attachments: []*acs.Attachment{
 					{
 						AttachmentArn: stringToPointer("attachmentArn"),
-						AttachmentProperties: []*ecsacs.AttachmentProperty{
+						AttachmentProperties: []*acs.AttachmentProperty{
 							{
 								Name:  stringToPointer(serviceconnect.GetServiceConnectConfigKey()),
 								Value: stringToPointer(tc.testServiceConnectConfig),
@@ -238,15 +239,15 @@ func TestHandleTaskAttachmentWithEBSVolumeAttachment(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.testName, func(t *testing.T) {
-			testAcsTask := &ecsacs.Task{
-				ElasticNetworkInterfaces: []*ecsacs.ElasticNetworkInterface{testIpv6ElasticNetworkInterface},
-				Containers: []*ecsacs.Container{
+			testAcsTask := &types.Task{
+				ElasticNetworkInterfaces: []*acs.ElasticNetworkInterface{testIpv6ElasticNetworkInterface},
+				Containers: []*acs.Container{
 					getTestcontainerFromACS(testSCContainerName, AWSVPCNetworkMode),
 				},
-				Attachments: []*ecsacs.Attachment{
+				Attachments: []*acs.Attachment{
 					{
 						AttachmentArn: stringToPointer("attachmentArn"),
-						AttachmentProperties: []*ecsacs.AttachmentProperty{
+						AttachmentProperties: []*acs.AttachmentProperty{
 							{
 								Name:  stringToPointer(apiresource.VolumeIdKey),
 								Value: stringToPointer(tc.testVolumeId),
@@ -275,7 +276,7 @@ func TestHandleTaskAttachmentWithEBSVolumeAttachment(t *testing.T) {
 						AttachmentType: stringToPointer(apiresource.EBSTaskAttach),
 					},
 				},
-				Volumes: []*ecsacs.Volume{
+				Volumes: []*acs.Volume{
 					{
 						Name: strptr("test-volume"),
 						Type: strptr(AttachmentType),
@@ -297,9 +298,9 @@ func TestHandleTaskAttachmentWithEBSVolumeAttachment(t *testing.T) {
 }
 
 func TestHandleTaskAttachmentsWithoutAttachment(t *testing.T) {
-	testAcsTask := &ecsacs.Task{
-		ElasticNetworkInterfaces: []*ecsacs.ElasticNetworkInterface{testIpv4ElasticNetworkInterface},
-		Containers: []*ecsacs.Container{
+	testAcsTask := &types.Task{
+		ElasticNetworkInterfaces: []*acs.ElasticNetworkInterface{testIpv4ElasticNetworkInterface},
+		Containers: []*acs.Container{
 			getTestcontainerFromACS("C1", BridgeNetworkMode),
 		},
 		NetworkMode: stringToPointer(BridgeNetworkMode),

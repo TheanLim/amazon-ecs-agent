@@ -30,22 +30,22 @@ import (
 	ni "github.com/aws/amazon-ecs-agent/ecs-agent/netlib/model/networkinterface"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	ecsacs "github.com/aws/aws-sdk-go-v2/service/acs"
+	"github.com/aws/aws-sdk-go-v2/service/acs"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
-var testAttachTaskENIMessage = &ecsacs.AttachTaskNetworkInterfacesInput{
+var testAttachTaskENIMessage = &acs.AttachTaskNetworkInterfacesInput{
 	MessageId:            aws.String(testconst.MessageID),
 	ClusterArn:           aws.String(testconst.ClusterARN),
 	ContainerInstanceArn: aws.String(testconst.ContainerInstanceARN),
-	ElasticNetworkInterfaces: []*ecsacs.ElasticNetworkInterface{
+	ElasticNetworkInterfaces: []*acs.ElasticNetworkInterface{
 		{
 			Ec2Id:                        aws.String("1"),
 			MacAddress:                   aws.String(testconst.RandomMAC),
 			InterfaceAssociationProtocol: aws.String(testconst.InterfaceProtocol),
 			SubnetGatewayIpv4Address:     aws.String(testconst.GatewayIPv4),
-			Ipv4Addresses: []*ecsacs.IPv4AddressAssignment{
+			Ipv4Addresses: []*acs.IPv4AddressAssignment{
 				{
 					Primary:        aws.Bool(true),
 					PrivateAddress: aws.String(testconst.IPv4Address),
@@ -63,13 +63,13 @@ func TestTaskENIAckHappyPath(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	ackSent := make(chan *ecsacs.AckRequest)
+	ackSent := make(chan *acs.AttachTaskNetworkInterfacesOutput)
 
 	taskEngineState := dockerstate.NewTaskEngineState()
 	dataClient := data.NewNoopClient()
 
 	testResponseSender := func(response interface{}) error {
-		resp := response.(*ecsacs.AckRequest)
+		resp := response.(*acs.AttachTaskNetworkInterfacesOutput)
 		ackSent <- resp
 		return nil
 	}
@@ -77,7 +77,7 @@ func TestTaskENIAckHappyPath(t *testing.T) {
 		NewENIHandler(taskEngineState, dataClient),
 		testResponseSender)
 
-	handleAttachMessage := testAttachTaskENIResponder.HandlerFunc().(func(*ecsacs.AttachTaskNetworkInterfacesInput))
+	handleAttachMessage := testAttachTaskENIResponder.HandlerFunc().(func(*acs.AttachTaskNetworkInterfacesInput))
 	go handleAttachMessage(testAttachTaskENIMessage)
 
 	attachTaskEniAckSent := <-ackSent
@@ -93,7 +93,7 @@ func TestTaskENIAckSingleMessageWithDuplicateENIAttachment(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	ackSent := make(chan *ecsacs.AckRequest)
+	ackSent := make(chan *acs.AttachTaskNetworkInterfacesOutput)
 
 	mockState := mock_dockerstate.NewMockTaskEngineState(ctrl)
 	dataClient := data.NewNoopClient()
@@ -123,7 +123,7 @@ func TestTaskENIAckSingleMessageWithDuplicateENIAttachment(t *testing.T) {
 	)
 
 	testResponseSender := func(response interface{}) error {
-		resp := response.(*ecsacs.AckRequest)
+		resp := response.(*acs.AttachTaskNetworkInterfacesOutput)
 		ackSent <- resp
 		return nil
 	}
@@ -131,7 +131,7 @@ func TestTaskENIAckSingleMessageWithDuplicateENIAttachment(t *testing.T) {
 		NewENIHandler(mockState, dataClient),
 		testResponseSender)
 
-	handleAttachMessage := testAttachTaskENIResponder.HandlerFunc().(func(*ecsacs.AttachTaskNetworkInterfacesInput))
+	handleAttachMessage := testAttachTaskENIResponder.HandlerFunc().(func(*acs.AttachTaskNetworkInterfacesInput))
 	go handleAttachMessage(testAttachTaskENIMessage)
 
 	attachTaskEniAckSent := <-ackSent

@@ -25,23 +25,23 @@ import (
 	"github.com/aws/amazon-ecs-agent/ecs-agent/acs/session/testconst"
 	ni "github.com/aws/amazon-ecs-agent/ecs-agent/netlib/model/networkinterface"
 
-	ecsacs "github.com/aws/aws-sdk-go-v2/service/acs"
+	"github.com/aws/aws-sdk-go-v2/service/acs"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
-var testAttachInstanceENIMessage = &ecsacs.AttachInstanceNetworkInterfacesInput{
+var testAttachInstanceENIMessage = &acs.AttachInstanceNetworkInterfacesInput{
 	MessageId:            aws.String(testconst.MessageID),
 	ClusterArn:           aws.String(testconst.ClusterARN),
 	ContainerInstanceArn: aws.String(testconst.ContainerInstanceARN),
-	ElasticNetworkInterfaces: []*ecsacs.ElasticNetworkInterface{
+	ElasticNetworkInterfaces: []*acs.ElasticNetworkInterface{
 		{
 			Ec2Id:                        aws.String("1"),
 			MacAddress:                   aws.String(testconst.RandomMAC),
 			InterfaceAssociationProtocol: aws.String(testconst.InterfaceProtocol),
 			SubnetGatewayIpv4Address:     aws.String(testconst.GatewayIPv4),
-			Ipv4Addresses: []*ecsacs.IPv4AddressAssignment{
+			Ipv4Addresses: []*acs.IPv4AddressAssignment{
 				{
 					Primary:        aws.Bool(true),
 					PrivateAddress: aws.String(testconst.IPv4Address),
@@ -115,12 +115,12 @@ func TestAttachInstanceENIMessageWithNoInterfaces(t *testing.T) {
 func TestAttachInstanceENIMessageWithMultipleInterfaces(t *testing.T) {
 	testAttachInstanceENIMessage.ElasticNetworkInterfaces = append(
 		testAttachInstanceENIMessage.ElasticNetworkInterfaces,
-		&ecsacs.ElasticNetworkInterface{
+		&acs.ElasticNetworkInterface{
 			Ec2Id:                        aws.String("2"),
 			MacAddress:                   aws.String(testconst.RandomMAC),
 			InterfaceAssociationProtocol: aws.String(testconst.InterfaceProtocol),
 			SubnetGatewayIpv4Address:     aws.String(testconst.GatewayIPv4),
-			Ipv4Addresses: []*ecsacs.IPv4AddressAssignment{
+			Ipv4Addresses: []*acs.IPv4AddressAssignment{
 				{
 					Primary:        aws.Bool(true),
 					PrivateAddress: aws.String(testconst.IPv4Address),
@@ -203,7 +203,7 @@ func TestInstanceENIAckHappyPath(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	ackSent := make(chan *ecsacs.AckRequest)
+	ackSent := make(chan *acs.AttachInstanceNetworkInterfacesOutput)
 
 	// WaitGroup is necessary to wait for function to be called in separate goroutine before exiting the test.
 	wg := sync.WaitGroup{}
@@ -219,7 +219,7 @@ func TestInstanceENIAckHappyPath(t *testing.T) {
 		})
 
 	testResponseSender := func(response interface{}) error {
-		resp := response.(*ecsacs.AckRequest)
+		resp := response.(*acs.AttachInstanceNetworkInterfacesOutput)
 		ackSent <- resp
 		return nil
 	}
@@ -228,7 +228,7 @@ func TestInstanceENIAckHappyPath(t *testing.T) {
 		testResponseSender)
 
 	handleAttachMessage :=
-		testAttachInstanceENIResponder.HandlerFunc().(func(*ecsacs.AttachInstanceNetworkInterfacesInput))
+		testAttachInstanceENIResponder.HandlerFunc().(func(*acs.AttachInstanceNetworkInterfacesInput))
 	go handleAttachMessage(testAttachInstanceENIMessage)
 
 	attachInstanceEniAckSent := <-ackSent

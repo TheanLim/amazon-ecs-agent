@@ -16,17 +16,9 @@ package acsclient
 import (
 	"github.com/aws/amazon-ecs-agent/ecs-agent/wsclient"
 
-	ecsacs "github.com/aws/aws-sdk-go-v2/service/acs"
+	"github.com/aws/aws-sdk-go-v2/service/acs"
 	"github.com/aws/aws-sdk-go-v2/service/acs/types"
 )
-
-// But we still import using ecsacs.AckRequest
-// One solution is to adding a acs/model/ecsacs/types.go and import accordingly
-type AckRequest struct {
-	Cluster *string
-	ContainerInstance *string
-	MessageId *string
-}
 
 var acsRecognizedTypes []interface{}
 
@@ -39,29 +31,30 @@ func init() {
 	// reflection, but that would solve this. The alternative is to either parse
 	// the .json model or the generated struct names.
 	acsRecognizedTypes = []interface{}{
-		ecsacs.HeartbeatInput{},
-		ecsacs.HeartbeatOutput{},
-		ecsacs.PayloadInput{},
-		ecsacs.PollOutput{},
-		AckRequest{},
-		ecsacs.UpdateFailureInput{},
-		ecsacs.PerformUpdateInput{},
-		ecsacs.StageUpdateInput{},
-		ecsacs.RefreshTaskIAMRoleCredentialsInput{},
-		ecsacs.RefreshTaskIAMRoleCredentialsOutput{},
+		acs.HeartbeatInput{},
+		acs.HeartbeatOutput{},
+		acs.PayloadInput{},
+		acs.PayloadOutput{},
+		acs.PollOutput{},
+		acs.UpdateFailureInput{},
+		acs.PerformUpdateInput{},
+		acs.StageUpdateInput{},
+		acs.RefreshTaskIAMRoleCredentialsInput{},
+		acs.RefreshTaskIAMRoleCredentialsOutput{},
 		types.ServerException{},
 		types.BadRequestException{},
 		types.InvalidClusterException{},
 		types.InvalidInstanceException{},
 		types.AccessDeniedException{},
 		types.InactiveInstanceException{},
-		ecsacs.ErrorInput{},
-		ecsacs.AttachTaskNetworkInterfacesInput{},
-		ecsacs.AttachInstanceNetworkInterfacesInput{},
-		ecsacs.ConfirmAttachmentInput{},
-		ecsacs.TaskManifestInput{},
-		ecsacs.TaskStopVerificationOutput{},
-		ecsacs.TaskStopVerificationInput{},
+		acs.ErrorInput{},
+		acs.AttachTaskNetworkInterfacesInput{},
+		acs.AttachInstanceNetworkInterfacesInput{},
+		acs.ConfirmAttachmentInput{},
+		acs.TaskManifestInput{},
+		acs.TaskManifestOutput{},
+		acs.TaskStopVerificationOutput{},
+		acs.TaskStopVerificationInput{},
 	}
 }
 

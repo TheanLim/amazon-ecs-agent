@@ -34,7 +34,7 @@ import (
 	"github.com/aws/amazon-ecs-agent/ecs-agent/volume"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	ecsacs "github.com/aws/aws-sdk-go-v2/service/acs"
+	acstype "github.com/aws/aws-sdk-go-v2/service/acs/types"
 	"github.com/containernetworking/cni/pkg/types"
 	"github.com/pkg/errors"
 )
@@ -84,7 +84,7 @@ func NewPlatform(
 // BuildTaskNetworkConfiguration builds a task network configuration object from the task payload.
 func (c *containerd) BuildTaskNetworkConfiguration(
 	taskID string,
-	taskPayload *ecsacs.Task) (*tasknetworkconfig.TaskNetworkConfig, error) {
+	taskPayload *acstype.Task) (*tasknetworkconfig.TaskNetworkConfig, error) {
 	mode := aws.ToString(taskPayload.NetworkMode)
 	switch mode {
 	case ecs.NetworkModeAwsvpc:
@@ -98,20 +98,20 @@ func (c *containerd) BuildTaskNetworkConfiguration(
 // buildAWSVPCNetworkConfig builds task network config object for AWSVPC.
 func (c *containerd) buildAWSVPCNetworkConfig(
 	taskID string,
-	taskPayload *ecsacs.Task,
+	taskPayload *acstype.Task,
 ) (*tasknetworkconfig.TaskNetworkConfig, error) {
 	if len(taskPayload.ElasticNetworkInterfaces) == 0 {
 		return nil, errors.New("interfaces list cannot be empty")
 	}
 
 	// Find primary network interface in order to build the task netns name.
-	var primaryIF *ecsacs.ElasticNetworkInterface
+	var primaryIF acstype.ElasticNetworkInterface
 	for _, eni := range taskPayload.ElasticNetworkInterfaces {
-		if aws.ToInt64(eni.Index) == 0 {
+		if aws.ToInt32(eni.Index) == 0 {
 			primaryIF = eni
 		}
 	}
-	ifName := networkinterface.GetInterfaceName(primaryIF)
+	ifName := networkinterface.GetInterfaceName(&primaryIF)
 	netNSName := networkinterface.NetNSName(taskID, ifName)
 	netNSPath := c.GetNetNSPath(netNSName)
 
@@ -128,11 +128,16 @@ func (c *containerd) buildAWSVPCNetworkConfig(
 		"MacToNames": macToNames,
 	})
 
+	ifaceList := make([]*acstype.ElasticNetworkInterface, len(taskPayload.ElasticNetworkInterfaces))
+	for i := range taskPayload.ElasticNetworkInterfaces {
+		ifaceList[i] = &taskPayload.ElasticNetworkInterfaces[i]
+	}
+
 	// Create interface object.
 	iface, err := networkinterface.New(
-		taskPayload.ElasticNetworkInterfaces[0],
+		&taskPayload.ElasticNetworkInterfaces[0],
 		"",
-		taskPayload.ElasticNetworkInterfaces,
+		ifaceList,
 		macToNames,
 	)
 	iface.Default = true

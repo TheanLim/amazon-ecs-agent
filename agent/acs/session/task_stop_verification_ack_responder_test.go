@@ -30,7 +30,7 @@ import (
 	"github.com/aws/amazon-ecs-agent/ecs-agent/wsclient"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	ecsacs "github.com/aws/aws-sdk-go-v2/service/acs"
+	"github.com/aws/aws-sdk-go-v2/service/acs"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
@@ -87,11 +87,11 @@ func defaultTasksOnInstance() map[string]*task.Task {
 }
 
 // defaultTaskStopVerificationAck returns a baseline task stop verification ACK to be used in testing.
-func defaultTaskStopVerificationAck() *ecsacs.TaskStopVerificationOutput {
-	return &ecsacs.TaskStopVerificationOutput{
+func defaultTaskStopVerificationAck() *acs.TaskStopVerificationOutput {
+	return &acs.TaskStopVerificationOutput{
 		GeneratedAt: aws.Int64(testconst.DummyInt),
 		MessageId:   aws.String(testconst.MessageID),
-		StopTasks:   []*ecsacs.TaskIdentifier{},
+		StopTasks:   []*acs.TaskIdentifier{},
 	}
 }
 
@@ -106,7 +106,7 @@ func TestTaskStopVerificationAckResponderStopsMultipleTasks(t *testing.T) {
 
 	// The below ACK contains a list of tasks which ACS confirms that Agent needs to stop.
 	taskStopVerificationAck := defaultTaskStopVerificationAck()
-	taskStopVerificationAck.StopTasks = []*ecsacs.TaskIdentifier{
+	taskStopVerificationAck.StopTasks = []*acs.TaskIdentifier{
 		{
 			DesiredStatus:  aws.String(apitaskstatus.TaskStoppedString),
 			TaskArn:        aws.String(taskARN2),
@@ -125,7 +125,7 @@ func TestTaskStopVerificationAckResponderStopsMultipleTasks(t *testing.T) {
 	mockTaskEngineExpectUpdateTaskWithArnAndDesiredStatus(t, tester, tasksOnInstance, taskARN3, apitaskstatus.TaskStopped)
 
 	handleTaskStopVerificationAck :=
-		tester.taskStopVerificationAckResponder.HandlerFunc().(func(message *ecsacs.TaskStopVerificationOutput))
+		tester.taskStopVerificationAckResponder.HandlerFunc().(func(message *acs.TaskStopVerificationOutput))
 	handleTaskStopVerificationAck(taskStopVerificationAck)
 
 	// Only task2 and task3 and their containers should be stopped.
@@ -155,7 +155,7 @@ func TestTaskStopVerificationAckResponderStopsAllTasks(t *testing.T) {
 
 	// The below ACK contains a list of tasks which ACS confirms that Agent needs to stop.
 	taskStopVerificationAck := defaultTaskStopVerificationAck()
-	taskStopVerificationAck.StopTasks = []*ecsacs.TaskIdentifier{
+	taskStopVerificationAck.StopTasks = []*acs.TaskIdentifier{
 		{
 			DesiredStatus:  aws.String(apitaskstatus.TaskStoppedString),
 			TaskArn:        aws.String(taskARN1),
@@ -181,7 +181,7 @@ func TestTaskStopVerificationAckResponderStopsAllTasks(t *testing.T) {
 	mockTaskEngineExpectUpdateTaskWithArnAndDesiredStatus(t, tester, tasksOnInstance, taskARN3, apitaskstatus.TaskStopped)
 
 	handleTaskStopVerificationAck :=
-		tester.taskStopVerificationAckResponder.HandlerFunc().(func(message *ecsacs.TaskStopVerificationOutput))
+		tester.taskStopVerificationAckResponder.HandlerFunc().(func(message *acs.TaskStopVerificationOutput))
 	handleTaskStopVerificationAck(taskStopVerificationAck)
 
 	// All tasks and containers on instance should be stopped.

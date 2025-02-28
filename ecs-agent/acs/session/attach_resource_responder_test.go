@@ -27,7 +27,7 @@ import (
 	mock_metrics "github.com/aws/amazon-ecs-agent/ecs-agent/metrics/mocks"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	ecsacs "github.com/aws/aws-sdk-go-v2/service/acs"
+	"github.com/aws/aws-sdk-go-v2/service/acs"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 )
@@ -38,7 +38,7 @@ const (
 )
 
 var (
-	testAttachmentPropertiesForEBSAttach = []*ecsacs.AttachmentProperty{
+	testAttachmentPropertiesForEBSAttach = []*acs.AttachmentProperty{
 		{
 			Name:  aws.String(resource.SourceVolumeHostPathKey),
 			Value: aws.String("taskarn-vol-id"),
@@ -65,7 +65,7 @@ var (
 		},
 	}
 
-	testAttachmentProperties = []*ecsacs.AttachmentProperty{
+	testAttachmentProperties = []*acs.AttachmentProperty{
 		{
 			Name:  aws.String(resource.FargateResourceIdName),
 			Value: aws.String("name1"),
@@ -91,11 +91,11 @@ var (
 			Value: aws.String("device1"),
 		},
 	}
-	testAttachment = &ecsacs.Attachment{
+	testAttachment = &acs.Attachment{
 		AttachmentArn:        aws.String(testAttachmentArn),
 		AttachmentProperties: testAttachmentProperties,
 	}
-	testConfirmAttachmentMessage = &ecsacs.ConfirmAttachmentInput{
+	testConfirmAttachmentMessage = &acs.ConfirmAttachmentInput{
 		Attachment:           testAttachment,
 		MessageId:            aws.String(testconst.MessageID),
 		ClusterArn:           aws.String(testClusterArn),
@@ -258,7 +258,7 @@ func TestResourceAckHappyPath(t *testing.T) {
 
 	confirmAttachmentMessageCopy := *testConfirmAttachmentMessage
 
-	ackSent := make(chan *ecsacs.AckRequest)
+	ackSent := make(chan *acs.ConfirmAttachmentOutput)
 
 	_, err := validateAttachmentAndReturnProperties(&confirmAttachmentMessageCopy)
 	require.NoError(t, err)
@@ -279,7 +279,7 @@ func TestResourceAckHappyPath(t *testing.T) {
 		})
 
 	testResponseSender := func(response interface{}) error {
-		resp := response.(*ecsacs.AckRequest)
+		resp := response.(*acs.ConfirmAttachmentOutput)
 		ackSent <- resp
 		return nil
 	}
@@ -288,7 +288,7 @@ func TestResourceAckHappyPath(t *testing.T) {
 		mockMetricsFactory,
 		testResponseSender)
 
-	handleAttachMessage := testResourceResponder.HandlerFunc().(func(*ecsacs.ConfirmAttachmentInput))
+	handleAttachMessage := testResourceResponder.HandlerFunc().(func(*acs.ConfirmAttachmentInput))
 	go handleAttachMessage(&confirmAttachmentMessageCopy)
 
 	attachResourceAckSent := <-ackSent

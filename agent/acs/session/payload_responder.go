@@ -31,7 +31,7 @@ import (
 	ni "github.com/aws/amazon-ecs-agent/ecs-agent/netlib/model/networkinterface"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	ecsacs "github.com/aws/aws-sdk-go-v2/service/acs"
+	"github.com/aws/aws-sdk-go-v2/service/acs"
 	"github.com/aws/aws-sdk-go-v2/service/acs/types"
 	"github.com/pkg/errors"
 )
@@ -67,8 +67,8 @@ func NewPayloadMessageHandler(taskEngine engine.TaskEngine,
 	}
 }
 
-func (pmHandler *payloadMessageHandler) ProcessMessage(message *ecsacs.PayloadInput,
-	ackFunc func(*ecsacs.AckRequest, []*ecsacs.RefreshTaskIAMRoleCredentialsOutput)) error {
+func (pmHandler *payloadMessageHandler) ProcessMessage(message *acs.PayloadInput,
+	ackFunc func(*acs.PayloadOutput, []*acs.RefreshTaskIAMRoleCredentialsOutput)) error {
 
 	credentialsAcks, allTasksHandled := pmHandler.addPayloadTasks(message)
 
@@ -83,7 +83,7 @@ func (pmHandler *payloadMessageHandler) ProcessMessage(message *ecsacs.PayloadIn
 	}
 
 	// Send ACKs - do it in async such that it does not block handling more tasks.
-	go ackFunc(&ecsacs.AckRequest{
+	go ackFunc(&acs.PayloadOutput{
 		Cluster:           message.ClusterArn,
 		ContainerInstance: message.ContainerInstanceArn,
 		MessageId:         message.MessageId,
@@ -95,8 +95,8 @@ func (pmHandler *payloadMessageHandler) ProcessMessage(message *ecsacs.PayloadIn
 // addPayloadTasks does validation on each task and, for all valid ones, adds
 // it to the task engine. It returns a bool indicating if it could add every
 // task to the taskEngine and a slice of credential ack requests.
-func (pmHandler *payloadMessageHandler) addPayloadTasks(payload *ecsacs.PayloadInput) (
-	[]*ecsacs.RefreshTaskIAMRoleCredentialsOutput, bool) {
+func (pmHandler *payloadMessageHandler) addPayloadTasks(payload *acs.PayloadInput) (
+	[]*acs.RefreshTaskIAMRoleCredentialsOutput, bool) {
 
 	if len(payload.Tasks) == 0 {
 		logger.Critical("Received empty task list for message", logger.Fields{
@@ -234,7 +234,7 @@ func (pmHandler *payloadMessageHandler) addPayloadTasks(payload *ecsacs.PayloadI
 // handleInvalidTask handles invalid tasks by sending 'stopped' with
 // a suitable reason to the backend.
 func (pmHandler *payloadMessageHandler) handleInvalidTask(task *types.Task, err error,
-	payload *ecsacs.PayloadInput) {
+	payload *acs.PayloadInput) {
 	logger.Warn("Received unexpected ACS message", logger.Fields{
 		loggerfield.MessageID: aws.ToString(payload.MessageId),
 		loggerfield.TaskARN:   aws.ToString(task.Arn),
@@ -264,10 +264,10 @@ func (pmHandler *payloadMessageHandler) handleInvalidTask(task *types.Task, err 
 
 // addTasks adds the tasks to the task engine based on the skipAddTask condition.
 // This is used to add non-stopped tasks before adding stopped tasks.
-func (pmHandler *payloadMessageHandler) addTasks(payload *ecsacs.PayloadInput, tasks []*apitask.Task,
-	skipAddTask skipAddTaskComparatorFunc) ([]*ecsacs.RefreshTaskIAMRoleCredentialsOutput, bool) {
+func (pmHandler *payloadMessageHandler) addTasks(payload *acs.PayloadInput, tasks []*apitask.Task,
+	skipAddTask skipAddTaskComparatorFunc) ([]*acs.RefreshTaskIAMRoleCredentialsOutput, bool) {
 	allTasksOK := true
-	var credentialsAcks []*ecsacs.RefreshTaskIAMRoleCredentialsOutput
+	var credentialsAcks []*acs.RefreshTaskIAMRoleCredentialsOutput
 	for _, task := range tasks {
 		if skipAddTask(task.GetDesiredStatus()) {
 			continue
@@ -317,13 +317,13 @@ func (pmHandler *payloadMessageHandler) addTasks(payload *ecsacs.PayloadInput, t
 }
 
 func (pmHandler *payloadMessageHandler) ackCredentials(messageID *string, credentialsID string) (
-	*ecsacs.RefreshTaskIAMRoleCredentialsOutput, error) {
+	*acs.RefreshTaskIAMRoleCredentialsOutput, error) {
 	creds, ok := pmHandler.credentialsManager.GetTaskCredentials(credentialsID)
 	if !ok {
 		return nil, errors.Errorf("credentials could not be retrieved")
 
 	} else {
-		return &ecsacs.RefreshTaskIAMRoleCredentialsOutput{
+		return &acs.RefreshTaskIAMRoleCredentialsOutput{
 			MessageId:     messageID,
 			Expiration:    aws.String(creds.IAMRoleCredentials.Expiration),
 			CredentialsId: aws.String(creds.IAMRoleCredentials.CredentialsID),

@@ -26,22 +26,22 @@ import (
 	ni "github.com/aws/amazon-ecs-agent/ecs-agent/netlib/model/networkinterface"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	ecsacs "github.com/aws/aws-sdk-go-v2/service/acs"
+	"github.com/aws/aws-sdk-go-v2/service/acs"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
-var testAttachTaskENIMessage = &ecsacs.AttachTaskNetworkInterfacesInput{
+var testAttachTaskENIMessage = &acs.AttachTaskNetworkInterfacesInput{
 	MessageId:            aws.String(testconst.MessageID),
 	ClusterArn:           aws.String(testconst.ClusterARN),
 	ContainerInstanceArn: aws.String(testconst.ContainerInstanceARN),
-	ElasticNetworkInterfaces: []*ecsacs.ElasticNetworkInterface{
+	ElasticNetworkInterfaces: []*acs.ElasticNetworkInterface{
 		{
 			Ec2Id:                        aws.String("1"),
 			MacAddress:                   aws.String(testconst.RandomMAC),
 			InterfaceAssociationProtocol: aws.String(testconst.InterfaceProtocol),
 			SubnetGatewayIpv4Address:     aws.String(testconst.GatewayIPv4),
-			Ipv4Addresses: []*ecsacs.IPv4AddressAssignment{
+			Ipv4Addresses: []*acs.IPv4AddressAssignment{
 				{
 					Primary:        aws.Bool(true),
 					PrivateAddress: aws.String(testconst.IPv4Address),
@@ -115,12 +115,12 @@ func TestAttachTaskENIMessageWithNoInterfaces(t *testing.T) {
 // AttachTaskNetworkInterfacesMessage with multiple interfaces
 func TestAttachTaskENIMessageWithMultipleInterfaces(t *testing.T) {
 	testAttachTaskENIMessage.ElasticNetworkInterfaces = append(testAttachTaskENIMessage.ElasticNetworkInterfaces,
-		&ecsacs.ElasticNetworkInterface{
+		&acs.ElasticNetworkInterface{
 			Ec2Id:                        aws.String("2"),
 			MacAddress:                   aws.String(testconst.RandomMAC),
 			InterfaceAssociationProtocol: aws.String(testconst.InterfaceProtocol),
 			SubnetGatewayIpv4Address:     aws.String(testconst.GatewayIPv4),
-			Ipv4Addresses: []*ecsacs.IPv4AddressAssignment{
+			Ipv4Addresses: []*acs.IPv4AddressAssignment{
 				{
 					Primary:        aws.Bool(true),
 					PrivateAddress: aws.String(testconst.IPv4Address),
@@ -213,7 +213,7 @@ func TestTaskENIAckHappyPath(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	ackSent := make(chan *ecsacs.AckRequest)
+	ackSent := make(chan *acs.PayloadOutput)
 
 	// WaitGroup is necessary to wait for function to be called in separate goroutine before exiting the test.
 	wg := sync.WaitGroup{}
@@ -229,7 +229,7 @@ func TestTaskENIAckHappyPath(t *testing.T) {
 		})
 
 	testResponseSender := func(response interface{}) error {
-		resp := response.(*ecsacs.AckRequest)
+		resp := response.(*acs.PayloadOutput)
 		ackSent <- resp
 		return nil
 	}
@@ -237,7 +237,7 @@ func TestTaskENIAckHappyPath(t *testing.T) {
 		mockENIHandler,
 		testResponseSender)
 
-	handleAttachMessage := testAttachTaskENIResponder.HandlerFunc().(func(*ecsacs.AttachTaskNetworkInterfacesInput))
+	handleAttachMessage := testAttachTaskENIResponder.HandlerFunc().(func(*acs.AttachTaskNetworkInterfacesInput))
 	go handleAttachMessage(testAttachTaskENIMessage)
 
 	attachTaskEniAckSent := <-ackSent
