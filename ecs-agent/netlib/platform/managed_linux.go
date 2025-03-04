@@ -18,6 +18,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	ecsacs "github.com/aws/aws-sdk-go-v2/service/acs"
+	"github.com/aws/aws-sdk-go-v2/service/acs/types"
 	"github.com/pkg/errors"
 )
 
@@ -106,10 +107,10 @@ func (m *managedLinux) buildDefaultNetworkNamespace(taskID string) ([]*tasknetwo
 		return nil, err
 	}
 
-	hostENI := &ecsacs.ElasticNetworkInterface{
+	hostENI := &types.ElasticNetworkInterface{
 		AttachmentArn: aws.String("arn"),
 		Ec2Id:         aws.String(ec2ID),
-		Ipv4Addresses: []*ecsacs.IPv4AddressAssignment{
+		Ipv4Addresses: []types.IPv4AddressAssignment{
 			{
 				Primary:        aws.Bool(true),
 				PrivateAddress: aws.String(privateIpv4),
@@ -117,10 +118,10 @@ func (m *managedLinux) buildDefaultNetworkNamespace(taskID string) ([]*tasknetwo
 		},
 		SubnetGatewayIpv4Address:     aws.String(subNet),
 		MacAddress:                   aws.String(macAddress),
-		DomainNameServers:            []*string{},
-		DomainName:                   []*string{},
+		DomainNameServers:            []string{},
+		DomainName:                   []string{},
 		PrivateDnsName:               aws.String(DefaultArg),
-		InterfaceAssociationProtocol: aws.String(DefaultArg),
+		InterfaceAssociationProtocol: DefaultArg,
 		Index:                        aws.Int64(64),
 	}
 
