@@ -20,7 +20,7 @@ import (
 	"github.com/aws/amazon-ecs-agent/ecs-agent/logger"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	ecsacs "github.com/aws/aws-sdk-go-v2/service/acs"
+	"github.com/aws/aws-sdk-go-v2/service/acs/types"
 )
 
 const (
@@ -41,7 +41,7 @@ type EBSTaskVolumeConfig struct {
 
 // ParseEBSTaskVolumeAttachment parses the ebs task volume config value
 // from the given attachment.
-func ParseEBSTaskVolumeAttachment(ebsAttachment *ecsacs.Attachment) (*EBSTaskVolumeConfig, error) {
+func ParseEBSTaskVolumeAttachment(ebsAttachment *types.Attachment) (*EBSTaskVolumeConfig, error) {
 	ebsTaskVolumeConfig := &EBSTaskVolumeConfig{}
 	for _, property := range ebsAttachment.AttachmentProperties {
 		if property == nil {
