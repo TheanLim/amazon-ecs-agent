@@ -30,9 +30,9 @@ import (
 )
 
 // defaultPayloadMessage returns a baseline payload message to be used in testing.
-func defaultPayloadMessage() *ecsacs.PayloadMessage {
-	return &ecsacs.PayloadMessage{
-		Tasks:                []*ecsacs.Task{{}},
+func defaultPayloadMessage() *ecsacs.PayloadInput {
+	return &ecsacs.PayloadInput{
+		Tasks:                []types.Task{{}},
 		MessageId:            aws.String(testconst.MessageID),
 		ClusterArn:           aws.String(testconst.ClusterARN),
 		ContainerInstanceArn: aws.String(testconst.ContainerInstanceARN),
@@ -50,47 +50,47 @@ func TestValidatePayloadMessageWithNilMessage(t *testing.T) {
 func TestValidateInvalidPayloadMessages(t *testing.T) {
 	testCases := []struct {
 		name            string
-		messageMutation func(message *ecsacs.PayloadMessage)
+		messageMutation func(message *ecsacs.PayloadInput)
 		failureMsg      string
 	}{
 		{
 			name: "nil message ID",
-			messageMutation: func(message *ecsacs.PayloadMessage) {
+			messageMutation: func(message *ecsacs.PayloadInput) {
 				message.MessageId = nil
 			},
 			failureMsg: "Expected validation error validating a message with no message ID",
 		},
 		{
 			name: "empty message ID",
-			messageMutation: func(message *ecsacs.PayloadMessage) {
+			messageMutation: func(message *ecsacs.PayloadInput) {
 				message.MessageId = aws.String("")
 			},
 			failureMsg: "Expected validation error validating a message with empty message ID",
 		},
 		{
 			name: "nil cluster ARN",
-			messageMutation: func(message *ecsacs.PayloadMessage) {
+			messageMutation: func(message *ecsacs.PayloadInput) {
 				message.ClusterArn = nil
 			},
 			failureMsg: "Expected validation error validating a message with no cluster ARN",
 		},
 		{
 			name: "empty cluster ARN",
-			messageMutation: func(message *ecsacs.PayloadMessage) {
+			messageMutation: func(message *ecsacs.PayloadInput) {
 				message.ClusterArn = aws.String("")
 			},
 			failureMsg: "Expected validation error validating a message with empty cluster ARN",
 		},
 		{
 			name: "nil container instance ARN",
-			messageMutation: func(message *ecsacs.PayloadMessage) {
+			messageMutation: func(message *ecsacs.PayloadInput) {
 				message.ContainerInstanceArn = nil
 			},
 			failureMsg: "Expected validation error validating a message with no container instance ARN",
 		},
 		{
 			name: "empty container instance ARN",
-			messageMutation: func(message *ecsacs.PayloadMessage) {
+			messageMutation: func(message *ecsacs.PayloadInput) {
 				message.ContainerInstanceArn = aws.String("")
 			},
 			failureMsg: "Expected validation error validating a message with empty container instance ARN",
@@ -149,7 +149,7 @@ func TestPayloadAckHappyPath(t *testing.T) {
 	credentialsSessionToken := "token"
 	credentialsId := "credsid"
 	testMessage := defaultPayloadMessage()
-	testMessage.Tasks = []*ecsacs.Task{
+	testMessage.Tasks = []types.Task{
 		{
 			Arn: aws.String(taskArn),
 			RoleCredentials: &types.IAMRoleCredentials{
@@ -167,7 +167,7 @@ func TestPayloadAckHappyPath(t *testing.T) {
 	testPayloadResponder := NewPayloadResponder(mockPayloadMsgHandler, testResponseSender)
 	mockPayloadMsgHandler.EXPECT().
 		ProcessMessage(gomock.Any(), gomock.Any()).
-		Do(func(message *ecsacs.PayloadMessage,
+		Do(func(message *ecsacs.PayloadInput,
 			ackFunc func(*ecsacs.AckRequest, []*ecsacs.RefreshTaskIAMRoleCredentialsOutput)) {
 			assert.NotNil(t, message.Tasks)
 			assert.Equal(t, 1, len(message.Tasks))
@@ -187,7 +187,7 @@ func TestPayloadAckHappyPath(t *testing.T) {
 
 	// Send a payload message.
 	handlePayloadMessage :=
-		testPayloadResponder.HandlerFunc().(func(message *ecsacs.PayloadMessage))
+		testPayloadResponder.HandlerFunc().(func(message *ecsacs.PayloadInput))
 	handlePayloadMessage(testMessage)
 
 	// Verify that payload message ACK is sent and is as expected.
