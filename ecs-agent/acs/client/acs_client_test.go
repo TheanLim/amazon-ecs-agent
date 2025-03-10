@@ -178,15 +178,15 @@ func TestPayloadHandlerCalled(t *testing.T) {
 	cs := testCS(conn)
 	defer cs.Close()
 
-	messageChannel := make(chan *ecsacs.PayloadMessage)
-	reqHandler := func(payload *ecsacs.PayloadMessage) {
+	messageChannel := make(chan *ecsacs.PayloadInput)
+	reqHandler := func(payload *ecsacs.PayloadInput) {
 		messageChannel <- payload
 	}
 	cs.AddRequestHandler(reqHandler)
 	go cs.Serve(context.Background())
 
-	expectedMessage := &ecsacs.PayloadMessage{
-		Tasks: []*ecsacs.Task{{
+	expectedMessage := &ecsacs.PayloadInput{
+		Tasks: []types.Task{{
 			Arn: aws.String("arn"),
 		}},
 	}
@@ -280,7 +280,7 @@ func TestConnect(t *testing.T) {
 	}
 
 	errs := make(chan error)
-	cs.AddRequestHandler(func(msg *ecsacs.PayloadMessage) {
+	cs.AddRequestHandler(func(msg *ecsacs.PayloadInput) {
 		if *msg.MessageId != "messageId" || len(msg.Tasks) != 1 || *msg.Tasks[0].Arn != "arn1" {
 			errs <- errors.New("incorrect payloadMessage arguments")
 		} else {
