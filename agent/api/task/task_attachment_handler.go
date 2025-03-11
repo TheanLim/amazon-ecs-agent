@@ -78,6 +78,7 @@ func (scAttachment *ServiceConnectAttachmentHandler) validateAttachment(acsTask 
 // handleTaskAttachments parses and validates attachments based on attachment type.
 func handleTaskAttachments(acsTask *types.Task, task *Task) error {
 	if acsTask.Attachments != nil {
+		logger.Info("Entering handleTaskAttachments acsTask.Attachments != ni")
 		var serviceConnectAttachment *types.Attachment
 		var ebsVolumeAttachments []*types.Attachment
 		for _, attachment := range acsTask.Attachments {
@@ -98,6 +99,7 @@ func handleTaskAttachments(acsTask *types.Task, task *Task) error {
 		if serviceConnectAttachment != nil {
 			scHandler, err := getHandlerByType(serviceConnectAttachmentType, handlers)
 			if err != nil {
+				logger.Info("fail at handleTaskAttachments's getHandlerByType")
 				return err
 			}
 
@@ -112,6 +114,7 @@ func handleTaskAttachments(acsTask *types.Task, task *Task) error {
 			task.ServiceConnectConfig = scHandler.(*ServiceConnectAttachmentHandler).scConfig
 		}
 		if len(ebsVolumeAttachments) > 0 {
+			logger.Info("At handleTaskAttachments's len(ebsVolumeAttachments) > 0")
 			ebsVolumes := make(map[string]bool)
 			for _, attachment := range ebsVolumeAttachments {
 				ebs, err := taskresourcevolume.ParseEBSTaskVolumeAttachment(attachment)

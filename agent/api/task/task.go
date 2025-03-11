@@ -315,10 +315,12 @@ type Task struct {
 func TaskFromACS(acsTask *acstypes.Task, envelope *acs.PayloadInput) (*Task, error) {
 	data, err := jsonutil.BuildJSON(acsTask)
 	if err != nil {
+		logger.Info("fail at data, err := jsonutil.BuildJSON(acsTask)")
 		return nil, err
 	}
 	task := &Task{}
 	if err := json.Unmarshal(data, task); err != nil {
+		logger.Info("fail at json.Unmarshal(data, task)")
 		return nil, err
 	}
 
@@ -340,6 +342,7 @@ func TaskFromACS(acsTask *acstypes.Task, envelope *acs.PayloadInput) (*Task, err
 
 	// extract and validate attachments
 	if err := handleTaskAttachments(acsTask, task); err != nil {
+		logger.Info("fail at handleTaskAttachments")
 		return nil, err
 	}
 
