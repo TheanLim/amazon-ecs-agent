@@ -109,7 +109,7 @@ func setupGMSALinux(cfg *config.Config, state dockerstate.TaskEngineState, t *te
 	resourceFields := &taskresource.ResourceFields{
 		ResourceFieldsCommon: &taskresource.ResourceFieldsCommon{
 			SSMClientCreator: ssmfactory.NewSSMClientCreator(),
-			S3ClientCreator:  s3factory.NewS3ClientCreator(),
+			S3ClientCreator:  s3factory.NewS3ClientCreator(cfg.InstanceIPCompatibility),
 		},
 		DockerClient: dockerClient,
 	}

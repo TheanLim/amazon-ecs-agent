@@ -25,6 +25,7 @@ import (
 	"testing"
 
 	"github.com/aws/amazon-ecs-agent/agent/api/container"
+	"github.com/aws/amazon-ecs-agent/agent/config/ipcompatibility"
 	mock_factory "github.com/aws/amazon-ecs-agent/agent/s3/factory/mocks"
 	mock_s3 "github.com/aws/amazon-ecs-agent/agent/s3/mocks/s3manager"
 	"github.com/aws/amazon-ecs-agent/agent/taskresource"
@@ -105,6 +106,7 @@ func TestInitializeFileEnvResource(t *testing.T) {
 	envfileResource.Initialize(&taskresource.ResourceFields{
 		ResourceFieldsCommon: &taskresource.ResourceFieldsCommon{
 			CredentialsManager: mockCredentialsManager,
+			IPCompatibility:    ipcompatibility.NewIPCompatibility(true, true),
 		},
 	}, status.TaskRunning, status.TaskRunning)
 

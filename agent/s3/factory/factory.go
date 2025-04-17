@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/aws/amazon-ecs-agent/agent/config"
+	"github.com/aws/amazon-ecs-agent/agent/config/ipcompatibility"
 	s3client "github.com/aws/amazon-ecs-agent/agent/s3"
 	agentversion "github.com/aws/amazon-ecs-agent/agent/version"
 	"github.com/aws/amazon-ecs-agent/ecs-agent/credentials"
@@ -37,18 +38,20 @@ const (
 )
 
 type S3ClientCreator interface {
-	NewS3ManagerClient(bucket, region string, creds credentials.IAMRoleCredentials, cfg *config.Config) (s3client.S3ManagerClient, error)
-	NewS3Client(bucket, region string, creds credentials.IAMRoleCredentials, cfg *config.Config) (s3client.S3Client, error)
+	NewS3ManagerClient(bucket, region string, creds credentials.IAMRoleCredentials) (s3client.S3ManagerClient, error)
+	NewS3Client(bucket, region string, creds credentials.IAMRoleCredentials) (s3client.S3Client, error)
 }
 
 // NewS3ClientCreator provides 2 implementations
 // NewS3ManagerClient implements methods from aws-sdk-go/service/s3manager.
 // NewS3Client implements methods from aws-sdk-go/service/s3.
-func NewS3ClientCreator() S3ClientCreator {
-	return &s3ClientCreator{}
+func NewS3ClientCreator(ipCompatibility ipcompatibility.IPCompatibility) S3ClientCreator {
+	return &s3ClientCreator{ipCompatibility}
 }
 
-type s3ClientCreator struct{}
+type s3ClientCreator struct {
+	ipCompatibility ipcompatibility.IPCompatibility
+}
 
 func isS3FIPSCompliantRegion(region string) bool {
 	// Define the regions where S3 has FIPS endpoints
@@ -92,10 +95,10 @@ func createAWSConfig(region string, creds credentials.IAMRoleCredentials, useFIP
 }
 
 // NewS3ManagerClient returns a new S3 client based on the region of the bucket.
-func (*s3ClientCreator) NewS3ManagerClient(bucket, region string, creds credentials.IAMRoleCredentials, cfg *config.Config) (s3client.S3ManagerClient, error) {
+func (c *s3ClientCreator) NewS3ManagerClient(bucket, region string, creds credentials.IAMRoleCredentials) (s3client.S3ManagerClient, error) {
 	// Create an initial AWS session to get the bucket region
-	awsConfig := createAWSConfig(region, creds, false, cfg.InstanceIPCompatibility.IsIPv6Compatible())
-	sess := session.Must(session.NewSession(awsConfig))
+	cfg := createAWSConfig(region, creds, false, c.ipCompatibility.IsIPv6Only())
+	sess := session.Must(session.NewSession(cfg))
 	svc := s3.New(sess)
 	bucketRegion, err := getRegionFromBucket(svc, bucket)
 	if err != nil {
@@ -103,16 +106,16 @@ func (*s3ClientCreator) NewS3ManagerClient(bucket, region string, creds credenti
 	}
 	// Determine if we should use FIPS endpoints based on the bucket region
 	useFIPSEndpoint := config.IsFIPSEnabled() && isS3FIPSCompliantRegion(bucketRegion)
-	awsConfig = createAWSConfig(bucketRegion, creds, useFIPSEndpoint, cfg.InstanceIPCompatibility.IsIPv6Compatible())
-	sessWithRegion := session.Must(session.NewSession(awsConfig))
+	cfg = createAWSConfig(bucketRegion, creds, useFIPSEndpoint, c.ipCompatibility.IsIPv6Only())
+	sessWithRegion := session.Must(session.NewSession(cfg))
 	return s3manager.NewDownloaderWithClient(s3.New(sessWithRegion)), nil
 }
 
 // NewS3Client returns a new S3 client to support S3 operations which are not provided by s3manager.
-func (*s3ClientCreator) NewS3Client(bucket, region string, creds credentials.IAMRoleCredentials, cfg *config.Config) (s3client.S3Client, error) {
+func (c *s3ClientCreator) NewS3Client(bucket, region string, creds credentials.IAMRoleCredentials) (s3client.S3Client, error) {
 	// Create an initial AWS session to get the bucket region
-	awsConfig := createAWSConfig(region, creds, false, cfg.InstanceIPCompatibility.IsIPv6Compatible())
-	sess := session.Must(session.NewSession(awsConfig))
+	cfg := createAWSConfig(region, creds, false, c.ipCompatibility.IsIPv6Only())
+	sess := session.Must(session.NewSession(cfg))
 	svc := s3.New(sess)
 	bucketRegion, err := getRegionFromBucket(svc, bucket)
 	if err != nil {
@@ -120,8 +123,8 @@ func (*s3ClientCreator) NewS3Client(bucket, region string, creds credentials.IAM
 	}
 	// Determine if we should use FIPS endpoints based on the bucket region
 	useFIPSEndpoint := config.IsFIPSEnabled() && isS3FIPSCompliantRegion(bucketRegion)
-	awsConfig = createAWSConfig(bucketRegion, creds, useFIPSEndpoint, cfg.InstanceIPCompatibility.IsIPv6Compatible())
-	sessWithRegion := session.Must(session.NewSession(awsConfig))
+	cfg = createAWSConfig(bucketRegion, creds, useFIPSEndpoint, c.ipCompatibility.IsIPv6Only())
+	sessWithRegion := session.Must(session.NewSession(cfg))
 	return s3.New(sessWithRegion), nil
 }
 func getRegionFromBucket(svc *s3.S3, bucket string) (string, error) {

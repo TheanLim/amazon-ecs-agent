@@ -29,6 +29,7 @@ import (
 	"github.com/pkg/errors"
 
 	apicontainer "github.com/aws/amazon-ecs-agent/agent/api/container"
+	"github.com/aws/amazon-ecs-agent/agent/config/ipcompatibility"
 	"github.com/aws/amazon-ecs-agent/agent/s3"
 	"github.com/aws/amazon-ecs-agent/agent/s3/factory"
 	"github.com/aws/amazon-ecs-agent/agent/taskresource"
@@ -99,7 +100,7 @@ type FirelensResource struct {
 // NewFirelensResource returns a new FirelensResource.
 func NewFirelensResource(cluster, taskARN, taskDefinition, ec2InstanceID, dataDir, firelensConfigType, region, networkMode string,
 	firelensOptions map[string]string, containerToLogOptions map[string]map[string]string, credentialsManager credentials.Manager,
-	executionCredentialsID string, containerMemoryLimit int64) (*FirelensResource, error) {
+	executionCredentialsID string, containerMemoryLimit int64, ipCompatibility ipcompatibility.IPCompatibility) (*FirelensResource, error) {
 	firelensResource := &FirelensResource{
 		cluster:                cluster,
 		taskARN:                taskARN,
@@ -110,7 +111,7 @@ func NewFirelensResource(cluster, taskARN, taskDefinition, ec2InstanceID, dataDi
 		networkMode:            networkMode,
 		containerToLogOptions:  containerToLogOptions,
 		ioutil:                 ioutilwrapper.NewIOUtil(),
-		s3ClientCreator:        factory.NewS3ClientCreator(),
+		s3ClientCreator:        factory.NewS3ClientCreator(ipCompatibility),
 		executionCredentialsID: executionCredentialsID,
 		credentialsManager:     credentialsManager,
 		containerMemoryLimit:   containerMemoryLimit,
@@ -218,7 +219,7 @@ func (firelens *FirelensResource) Initialize(resourceFields *taskresource.Resour
 	// Initialize the fields that won't be populated by unmarshalling from state file.
 	firelens.initStatusToTransition()
 	firelens.ioutil = ioutilwrapper.NewIOUtil()
-	firelens.s3ClientCreator = factory.NewS3ClientCreator()
+	firelens.s3ClientCreator = factory.NewS3ClientCreator(resourceFields.IPCompatibility)
 	firelens.credentialsManager = resourceFields.CredentialsManager
 }
 

@@ -23,6 +23,7 @@ import (
 	"time"
 
 	apicontainer "github.com/aws/amazon-ecs-agent/agent/api/container"
+	"github.com/aws/amazon-ecs-agent/agent/config/ipcompatibility"
 	"github.com/aws/amazon-ecs-agent/agent/s3"
 	"github.com/aws/amazon-ecs-agent/agent/s3/factory"
 	"github.com/aws/amazon-ecs-agent/agent/taskresource"
@@ -87,7 +88,7 @@ type EnvironmentFileResource struct {
 
 // NewEnvironmentFileResource creates a new EnvironmentFileResource object
 func NewEnvironmentFileResource(cluster, taskARN, region, dataDir, containerName string, envfiles []apicontainer.EnvironmentFile,
-	credentialsManager credentials.Manager, executionCredentialsID string) (*EnvironmentFileResource, error) {
+	credentialsManager credentials.Manager, executionCredentialsID string, ipCompatibility ipcompatibility.IPCompatibility) (*EnvironmentFileResource, error) {
 	envfileResource := &EnvironmentFileResource{
 		cluster:                cluster,
 		taskARN:                taskARN,
@@ -96,7 +97,7 @@ func NewEnvironmentFileResource(cluster, taskARN, region, dataDir, containerName
 		environmentFilesSource: envfiles,
 		ioutil:                 ioutilwrapper.NewIOUtil(),
 		bufio:                  bufiowrapper.NewBufio(),
-		s3ClientCreator:        factory.NewS3ClientCreator(),
+		s3ClientCreator:        factory.NewS3ClientCreator(ipCompatibility),
 		executionCredentialsID: executionCredentialsID,
 		credentialsManager:     credentialsManager,
 	}
@@ -118,7 +119,7 @@ func (envfile *EnvironmentFileResource) Initialize(resourceFields *taskresource.
 
 	envfile.initStatusToTransition()
 	envfile.credentialsManager = resourceFields.CredentialsManager
-	envfile.s3ClientCreator = factory.NewS3ClientCreator()
+	envfile.s3ClientCreator = factory.NewS3ClientCreator(resourceFields.IPCompatibility)
 	envfile.ioutil = ioutilwrapper.NewIOUtil()
 	envfile.bufio = bufiowrapper.NewBufio()
 	envfile.lock.Unlock()
