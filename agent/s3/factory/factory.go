@@ -15,6 +15,8 @@ package factory
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"time"
 
 	"github.com/aws/amazon-ecs-agent/agent/config"
@@ -72,7 +74,11 @@ func createAWSConfig(region string, creds credentials.IAMRoleCredentials, useFIP
 		WithHTTPClient(httpclient.New(roundtripTimeout, false, agentversion.String(), config.OSType)).
 		WithCredentials(
 			awscreds.NewStaticCredentials(creds.AccessKeyID, creds.SecretAccessKey, creds.SessionToken)).
-		WithRegion(region)
+		WithRegion(region).
+		WithLogLevel(aws.LogDebug).
+		WithLogger(aws.LoggerFunc(func(args ...interface{}) {
+			fmt.Fprintln(os.Stdout, args...)
+		}))
 
 	if useDualStackEndpoint {
 		logger.Debug("Configuring S3 DualStack endpoint")
