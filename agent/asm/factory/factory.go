@@ -15,6 +15,8 @@ package factory
 
 import (
 	"context"
+	"log"
+	"os"
 	"time"
 
 	"github.com/aws/amazon-ecs-agent/agent/asm"
@@ -24,6 +26,7 @@ import (
 	"github.com/aws/amazon-ecs-agent/ecs-agent/credentials"
 	"github.com/aws/amazon-ecs-agent/ecs-agent/httpclient"
 	"github.com/aws/amazon-ecs-agent/ecs-agent/logger"
+	"github.com/aws/smithy-go/logging"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
@@ -51,6 +54,10 @@ func (*asmClientCreator) NewASMClient(
 	ipCompatibility ipcompatibility.IPCompatibility,
 ) (asm.SecretsManagerAPI, error) {
 
+	customLogger := &awsLogger{
+		logger: log.New(os.Stdout, "CUSTOM LOGGER - secrets-manager: ", log.Lshortfile|log.Ltime),
+	}
+
 	opts := []func(*awsconfig.LoadOptions) error{
 		awsconfig.WithRegion(region),
 		awsconfig.WithHTTPClient(httpclient.New(roundtripTimeout, false, agentversion.String(), config.OSType)),
@@ -61,6 +68,8 @@ func (*asmClientCreator) NewASMClient(
 				creds.SessionToken,
 			),
 		),
+		awsconfig.WithLogger(customLogger),
+		awsconfig.WithClientLogMode(aws.LogRequest),
 	}
 
 	if ipCompatibility.IsIPv6Only() {
@@ -74,4 +83,12 @@ func (*asmClientCreator) NewASMClient(
 		return nil, err
 	}
 	return secretsmanager.NewFromConfig(cfg), nil
+}
+
+type awsLogger struct {
+	logger *log.Logger
+}
+
+func (l awsLogger) Logf(classification logging.Classification, format string, v ...interface{}) {
+	l.logger.Printf(format, v...)
 }
