@@ -16,12 +16,15 @@ import (
 	"context"
 
 	"github.com/aws/amazon-ecs-agent/agent/config"
+	"github.com/aws/amazon-ecs-agent/agent/config/ipcompatibility"
 	"github.com/aws/amazon-ecs-agent/agent/version"
 	ecsapi "github.com/aws/amazon-ecs-agent/ecs-agent/api/ecs"
 	ecsclient "github.com/aws/amazon-ecs-agent/ecs-agent/api/ecs/client"
 	"github.com/aws/amazon-ecs-agent/ecs-agent/credentials"
 	"github.com/aws/amazon-ecs-agent/ecs-agent/httpclient"
 	"github.com/aws/amazon-ecs-agent/ecs-agent/utils"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	awscreds "github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/ecs"
@@ -32,6 +35,7 @@ type TaskProtectionClientFactory struct {
 	Region             string
 	Endpoint           string
 	AcceptInsecureCert bool
+	IPCompatibility    ipcompatibility.IPCompatibility
 }
 
 // Helper function for retrieving credential from credentials manager and create ecs client
@@ -59,9 +63,7 @@ func (factory TaskProtectionClientFactory) NewTaskProtectionClient(
 		),
 	}
 
-	if factory.Endpoint != "" {
-		opts = append(opts, awsconfig.WithBaseEndpoint(utils.AddScheme(factory.Endpoint)))
-	}
+	opts = append(opts, factory.getEndpointOptions()...)
 
 	cfg, err := awsconfig.LoadDefaultConfig(context.TODO(), opts...)
 
@@ -71,4 +73,20 @@ func (factory TaskProtectionClientFactory) NewTaskProtectionClient(
 
 	ecsClient := ecs.NewFromConfig(cfg)
 	return ecsClient, nil
+}
+
+func (factory TaskProtectionClientFactory) getEndpointOptions() []func(*awsconfig.LoadOptions) error {
+	// When using a custom endpoint, additional endpoint configurations are not supported
+	if factory.Endpoint != "" {
+		return []func(*awsconfig.LoadOptions) error{
+			awsconfig.WithBaseEndpoint(utils.AddScheme(factory.Endpoint)),
+		}
+	}
+
+	// Initialize options slice to support multiple endpoint configurations in future (such as FIPS)
+	var opts []func(*awsconfig.LoadOptions) error
+	if factory.IPCompatibility.IsIPv6Only() {
+		opts = append(opts, awsconfig.WithUseDualStackEndpoint(aws.DualStackEndpointStateEnabled))
+	}
+	return opts
 }
