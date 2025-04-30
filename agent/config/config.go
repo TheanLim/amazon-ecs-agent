@@ -23,6 +23,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/amazon-ecs-agent/agent/config/ipcompatibility"
 	"github.com/aws/amazon-ecs-agent/agent/dockerclient"
 	"github.com/aws/amazon-ecs-agent/agent/utils"
 	apierrors "github.com/aws/amazon-ecs-agent/ecs-agent/api/errors"
@@ -86,7 +87,7 @@ const (
 	// has been created before it can be deleted
 	DefaultNonECSImageDeletionAge = 1 * time.Hour
 
-	//DefaultImagePullTimeout specifies the timeout for PullImage API.
+	// DefaultImagePullTimeout specifies the timeout for PullImage API.
 	DefaultImagePullTimeout = 2 * time.Hour
 
 	// minimumTaskCleanupWaitDuration specifies the minimum duration to wait before cleaning up
@@ -133,7 +134,7 @@ const (
 	// DefaultTaskMetadataBurstRate is set to handle 60 burst requests at once
 	DefaultTaskMetadataBurstRate = 60
 
-	//Known cached image names
+	// Known cached image names
 	CachedImageNameAgentContainer = "amazon/amazon-ecs-agent:latest"
 
 	// DefaultNvidiaRuntime is the name of the runtime to pass Nvidia GPUs to containers
@@ -215,7 +216,7 @@ func (cfg *Config) Merge(rhs Config) *Config {
 		}
 	}
 
-	return cfg //make it chainable
+	return cfg // make it chainable
 }
 
 // NewConfig returns a config struct created by merging environment variables,
@@ -225,7 +226,7 @@ func (cfg *Config) Merge(rhs Config) *Config {
 // considered fatal.
 func NewConfig(ec2client ec2.EC2MetadataClient) (*Config, error) {
 	var errs []error
-	envConfig, err := environmentConfig() //Environment overrides all else
+	envConfig, err := environmentConfig() // Environment overrides all else
 	if err != nil {
 		errs = append(errs, err)
 	}
@@ -242,6 +243,9 @@ func NewConfig(ec2client ec2.EC2MetadataClient) (*Config, error) {
 
 	// TODO feat:IPv6-only - Enable when launching IPv6-only support
 	// config.determineIPCompatibility(ec2client)
+
+	// Test
+	config.InstanceIPCompatibility = ipcompatibility.NewIPv6OnlyCompatibility()
 
 	if config.complete() {
 		// No need to do file / network IO
