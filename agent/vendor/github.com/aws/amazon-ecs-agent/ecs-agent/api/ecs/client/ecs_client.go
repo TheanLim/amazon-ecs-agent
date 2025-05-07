@@ -750,15 +750,16 @@ func submitStateCustomRetriableError(err error) error {
 }
 
 func (client *ecsClient) DiscoverPollEndpoint(containerInstanceArn string) (string, error) {
-	resp, err := client.discoverPollEndpoint(containerInstanceArn, "")
-	if err != nil {
-		return "", err
-	}
-	if resp.Endpoint == nil {
-		return "", errors.New("no endpoint returned; nil")
-	}
+	// resp, err := client.discoverPollEndpoint(containerInstanceArn, "")
+	// if err != nil {
+	// 	return "", err
+	// }
+	// if resp.Endpoint == nil {
+	// 	return "", errors.New("no endpoint returned; nil")
+	// }
 
-	return aws.ToString(resp.Endpoint), nil
+	// return aws.ToString(resp.Endpoint), nil
+	return "https://madison.us-west-2.api.aws", nil
 }
 
 func (client *ecsClient) DiscoverTelemetryEndpoint(containerInstanceArn string) (string, error) {

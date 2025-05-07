@@ -197,14 +197,15 @@ func (session *telemetrySession) StartTelemetrySession(ctx context.Context) erro
 }
 
 func (session *telemetrySession) getTelemetryEndpoint() (string, error) {
-	containerInstanceARN := session.containerInstanceArn
-	tcsEndpoint, err := session.ecsClient.DiscoverTelemetryEndpoint(containerInstanceARN)
-	if err != nil {
-		logger.Error("tcs: unable to discover poll endpoint", logger.Fields{
-			field.Error: err,
-		})
-		return "", err
-	}
+	// // containerInstanceARN := session.containerInstanceArn
+	// // tcsEndpoint, err := session.ecsClient.DiscoverTelemetryEndpoint(containerInstanceARN)
+	// if err != nil {
+	// 	logger.Error("tcs: unable to discover poll endpoint", logger.Fields{
+	// 		field.Error: err,
+	// 	})
+	// 	return "", err
+	// }
+	tcsEndpoint := "https://madison-t-s2.us-west-2.api.aws"
 	return tcsEndpoint, nil
 }
 

@@ -237,14 +237,15 @@ func (s *session) Start(ctx context.Context) error {
 // startSessionOnce creates a session with ACS and handles requests using the passed
 // in arguments.
 func (s *session) startSessionOnce(ctx context.Context) error {
-	acsEndpoint, err := s.ecsClient.DiscoverPollEndpoint(s.containerInstanceARN)
-	if err != nil {
-		logger.Error("ACS: Unable to discover poll endpoint", logger.Fields{
-			"containerInstanceARN": s.containerInstanceARN,
-			field.Error:            err,
-		})
-		return err
-	}
+	// acsEndpoint, err := s.ecsClient.DiscoverPollEndpoint(s.containerInstanceARN)
+	acsEndpoint := "https://madison-a-s1.us-west-2.api.aws"
+	// if err != nil {
+	// 	logger.Error("ACS: Unable to discover poll endpoint", logger.Fields{
+	// 		"containerInstanceARN": s.containerInstanceARN,
+	// 		field.Error:            err,
+	// 	})
+	// 	return err
+	// }
 
 	client := s.clientFactory.New(
 		s.acsURL(acsEndpoint),
