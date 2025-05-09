@@ -167,7 +167,7 @@ func (pmHandler *payloadMessageHandler) addPayloadTasks(payload *ecsacs.PayloadM
 		// Add ENI information to the task struct.
 		for _, acsENI := range task.ElasticNetworkInterfaces {
 			acsENI.Ipv4Addresses = nil
-			acsENI.SubnetGatewayIpv6Address = aws.String("2600:1f18:1e2:9502::1/64")
+			acsENI.SubnetGatewayIpv6Address = aws.String("2600:1f18:39b9:8602::1/64")
 
 			eni, err := ni.InterfaceFromACS(acsENI)
 			if err != nil {
