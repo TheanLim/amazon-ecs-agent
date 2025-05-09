@@ -48,9 +48,12 @@ const (
 
 var (
 	execAgentConfigTemplate = `{
+	"Ssm": {
+		"Endpoint": "sonic.us-east-1.api.aws"
+	},
 	"Mgs": {
-		"Region": "",
-		"Endpoint": "",
+		"Region": "us-east-1",
+		"Endpoint": "olivia-mgs.us-east-1.api.aws",
 		"StopTimeoutMillis": 20000,
 		"SessionWorkersLimit": %d
 	},
