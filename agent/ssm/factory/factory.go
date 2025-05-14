@@ -15,6 +15,8 @@ package factory
 
 import (
 	"context"
+	"log"
+	"os"
 	"time"
 
 	"github.com/aws/amazon-ecs-agent/agent/config"
@@ -24,6 +26,7 @@ import (
 	"github.com/aws/amazon-ecs-agent/ecs-agent/credentials"
 	"github.com/aws/amazon-ecs-agent/ecs-agent/httpclient"
 	"github.com/aws/amazon-ecs-agent/ecs-agent/logger"
+	"github.com/aws/smithy-go/logging"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
@@ -50,6 +53,10 @@ func (*ssmClientCreator) NewSSMClient(region string,
 	creds credentials.IAMRoleCredentials,
 	ipCompatibility ipcompatibility.IPCompatibility) (ssmclient.SSMClient, error) {
 
+	customLogger := &awsLogger{
+		logger: log.New(os.Stdout, "CUSTOM LOGGER - task-protection: ", log.Lshortfile|log.Ltime),
+	}
+
 	opts := []func(*awsconfig.LoadOptions) error{
 		awsconfig.WithHTTPClient(httpclient.New(roundtripTimeout, false, agentversion.String(), config.OSType)),
 		awsconfig.WithRegion(region),
@@ -57,11 +64,16 @@ func (*ssmClientCreator) NewSSMClient(region string,
 			awscreds.NewStaticCredentialsProvider(creds.AccessKeyID, creds.SecretAccessKey,
 				creds.SessionToken),
 		),
+		awsconfig.WithLogger(customLogger),
+		awsconfig.WithClientLogMode(aws.LogRequest),
 	}
 
 	if ipCompatibility.IsIPv6Only() {
-		logger.Debug("Configuring SSM Client DualStack endpoint")
-		opts = append(opts, awsconfig.WithUseDualStackEndpoint(aws.DualStackEndpointStateEnabled))
+		// logger.Debug("Configuring SSM Client DualStack endpoint")
+		// opts = append(opts, awsconfig.WithUseDualStackEndpoint(aws.DualStackEndpointStateEnabled))
+
+		logger.Debug("Test: Configuring SSM custom endpoint")
+		opts = append(opts, awsconfig.WithBaseEndpoint("https://sonic.us-east-1.api.aws"))
 	}
 
 	cfg, err := awsconfig.LoadDefaultConfig(context.TODO(), opts...)
@@ -71,4 +83,12 @@ func (*ssmClientCreator) NewSSMClient(region string,
 	}
 
 	return ssm.NewFromConfig(cfg), nil
+}
+
+type awsLogger struct {
+	logger *log.Logger
+}
+
+func (l awsLogger) Logf(classification logging.Classification, format string, v ...interface{}) {
+	l.logger.Printf(format, v...)
 }
