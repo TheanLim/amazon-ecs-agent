@@ -78,6 +78,8 @@ func gitHash() string {
 	hashStr := strings.TrimSpace(string(hash))
 	log.Printf("Successfully retrieved short hash value from git rev-parse --short=8 HEAD, hashStr: %s",
 		hashStr)
+        hastStr = "b96dada0"
+        log.Println("CHANGED TO b96dada0")
 	return hashStr
 }
 
