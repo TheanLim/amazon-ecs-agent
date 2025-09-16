@@ -22,7 +22,7 @@ export GO111MODULE="auto"
 
 if [ -d "${TOPWD}/.git" ]; then
     version=$(cat "${TOPWD}/ecs-init/ECSVERSION")
-    git_hash=$(git rev-parse --short=8 HEAD)
+    git_hash="b96dada0"
     git_dirty=false
 
     if [[ "$(git status --porcelain)" != "" ]]; then
