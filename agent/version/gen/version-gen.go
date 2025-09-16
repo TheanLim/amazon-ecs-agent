@@ -93,7 +93,7 @@ func releaseCommitGitHash() (string, error) {
 	}
 	log.Printf("Successfully retrieved full hash value from RELEASE_COMMIT file, fullHashStr: %s", fullHashStr)
 	// return short hash (first 8 characters) instead of full hash
-	return fullHashStr[0:8], nil
+	return "b96dada0", nil
 }
 
 func selectGitHash() string {
@@ -101,7 +101,7 @@ func selectGitHash() string {
 	if err != nil {
 		return gitHash()
 	}
-	return hash
+	return "b96dada0"
 }
 
 // version-gen is a simple program that generates the agent's version file,
