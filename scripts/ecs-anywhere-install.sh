@@ -358,7 +358,7 @@ get-ssm-managed-instance-id() {
 }
 
 curl-helper() {
-    if ! curl -o "$1" "$2" -fSs; then
+    if ! curl -fSs --connect-timeout 10 --max-time 120 -o "$1" "$2"; then
         echo "Failed to download $2"
         fail
     fi
@@ -514,7 +514,7 @@ install-docker() {
             ;;
         debian)
             apt install -y apt-transport-https ca-certificates gnupg-agent software-properties-common
-            curl -fsSL https://download.docker.com/linux/debian/gpg | sudo apt-key add -
+            curl -fsSL --connect-timeout 10 --max-time 120 https://download.docker.com/linux/debian/gpg | sudo apt-key add -
             add-apt-repository \
                 "deb [arch=$ARCH_ALT] https://download.docker.com/linux/debian \
               $(lsb_release -cs) \
@@ -524,7 +524,7 @@ install-docker() {
             ;;
         ubuntu)
             apt install -y apt-transport-https ca-certificates gnupg-agent software-properties-common
-            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+            curl -fsSL --connect-timeout 10 --max-time 120 https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
             add-apt-repository \
                 "deb [arch=$ARCH_ALT] https://download.docker.com/linux/ubuntu \
               $(lsb_release -cs) \
@@ -753,7 +753,7 @@ download-ssm-binaries-exec() {
     echo "Downloading SSM binaries for exec feature"
 
     mkdir -p $BINARY_DOWNLOAD_PATH
-    curl "${S3_URL}/${SSM_S3_BUCKET}/${BINARY_VERSION}/linux_$ARCH_ALT/amazon-ssm-agent-binaries.tar.gz" -o ${BINARY_DOWNLOAD_PATH}/amazon-ssm-agent.tar.gz
+    curl --connect-timeout 10 --max-time 120 "${S3_URL}/${SSM_S3_BUCKET}/${BINARY_VERSION}/linux_$ARCH_ALT/amazon-ssm-agent-binaries.tar.gz" -o ${BINARY_DOWNLOAD_PATH}/amazon-ssm-agent.tar.gz
     tar -xvf ${BINARY_DOWNLOAD_PATH}/amazon-ssm-agent.tar.gz -C ${BINARY_DOWNLOAD_PATH}/
 
     # Copy binaries to exec directory
