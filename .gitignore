@@ -45,6 +45,9 @@ ecs-agent-*.tar
 *.DS_Store
 .run/
 pkg/
+# ecs-agent/pkg is real source (e.g. pkg/meminfo, vendored from moby v29), not a build artifact
+!ecs-agent/pkg/
+!ecs-agent/pkg/**
 .vscode/
 .kiro/
 !.kiro/steering/
