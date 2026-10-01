@@ -1127,6 +1127,24 @@ func (c *Container) MergeEnvironmentVariables(envVars map[string]string) {
 	}
 }
 
+// MergeEnvironmentVariablesIfNoneSet merges envVars only if none of their keys is already set.
+func (c *Container) MergeEnvironmentVariablesIfNoneSet(envVars map[string]string) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	for k := range envVars {
+		if _, ok := c.Environment[k]; ok {
+			return
+		}
+	}
+	if c.Environment == nil {
+		c.Environment = make(map[string]string)
+	}
+	for k, v := range envVars {
+		c.Environment[k] = v
+	}
+}
+
 // MergeEnvironmentVariablesFromEnvfiles appends environment variable pairs from
 // the retrieved envfiles to the container's environment values list
 // envvars from envfiles will have lower precedence than existing envvars
