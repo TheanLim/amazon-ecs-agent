@@ -12,31 +12,92 @@
 # express or implied. See the License for the specific language governing
 # permissions and limitations under the License.
 #
-# this script searches through known locations for certs (borrowed from 
-# https://go.dev/src/crypto/x509/root_linux.go) and writes them to the
-# current dir 
+# Usage: get-host-certs [ca-trust-source]
+#
+# Writes the CA bundle for the agent image to misc/certs/host-certs.crt.
+#
+# Without an argument, the script copies the first CA bundle that it finds in
+# the known host locations (borrowed from https://go.dev/src/crypto/x509/root_linux.go).
+#
+# With an argument, the bundle holds only the certificates that are both:
+#   - server-auth CA anchors on the build host, from "trust extract", and
+#   - in the given p11-kit trust file, for example ca-bundle.trust.p11-kit
+#     from the ca-certificates package.
+# "trust extract" applies the trust policy. The trust file removes the
+# certificates that the build host added to its own trust store.
 
 set -ex
 
+# Resolve the CA trust source before the cd, so that a relative path is read
+# from the caller's directory.
+ca_trust_source="${1:+$(realpath "$1")}"
+
 ROOT=$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )
 cd "${ROOT}/misc/certs"
+readonly output_file="./host-certs.crt"
 
-# Possible certificate files
-certFiles=("/etc/ssl/certs/ca-certificates.crt" "/etc/pki/tls/certs/ca-bundle.crt" "/etc/ssl/ca-bundle.pem" "/etc/pki/tls/cacert.pem" "/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem" "/etc/ssl/cert.pem")
+# Print each PEM certificate in a file as one line of base64, sorted.
+cert_bodies() {
+  awk '/-----BEGIN CERTIFICATE-----/ { body = ""; in_cert = 1; next }
+       /-----END CERTIFICATE-----/   { print body; in_cert = 0; next }
+       in_cert                       { gsub(/[[:space:]]/, ""); body = body $0 }' "$1" \
+    | LC_ALL=C sort -u
+}
 
-# search and stop once certs are found
-thisCertFile=""
-for file in ${certFiles[@]}; do
-  if test -f $file; then
-    thisCertFile=$file
-    break
+# Print one line of base64 per certificate from stdin as PEM, 64 characters
+# per line.
+to_pem() {
+  awk '{ print "-----BEGIN CERTIFICATE-----"
+         for (i = 1; i <= length($0); i += 64) print substr($0, i, 64)
+         print "-----END CERTIFICATE-----" }'
+}
+
+# Write the server-auth CA anchors of the build host that are also in the
+# given p11-kit trust file.
+write_bundle_from_trust_source() {
+  local trust_source="$1"
+  if [ ! -f "${trust_source}" ]; then
+    echo "CA trust source ${trust_source} does not exist" >&2
+    exit 1
   fi
-done
 
-# if we found a cert file, we'll copy else return 0
-if [ ! -z "$thisCertFile" ]
-then
-  cp $thisCertFile ./host-certs.crt
-else
+  host_anchors="$(mktemp)"
+  trap 'rm -f "${host_anchors}"' EXIT
+  trust extract --format=pem-bundle --filter=ca-anchors --purpose=server-auth \
+    --overwrite "${host_anchors}"
+
+  LC_ALL=C comm -12 <(cert_bodies "${host_anchors}") <(cert_bodies "${trust_source}") \
+    | to_pem > "${output_file}"
+
+  if ! grep -q 'BEGIN CERTIFICATE' "${output_file}"; then
+    echo "${output_file} has no certificates" >&2
+    exit 1
+  fi
+}
+
+# Copy the first CA bundle that is found on the build host.
+copy_host_bundle() {
+  local cert_files=(
+    "/etc/ssl/certs/ca-certificates.crt"
+    "/etc/pki/tls/certs/ca-bundle.crt"
+    "/etc/ssl/ca-bundle.pem"
+    "/etc/pki/tls/cacert.pem"
+    "/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem"
+    "/etc/ssl/cert.pem"
+  )
+  local file
+  for file in "${cert_files[@]}"; do
+    if [ -f "${file}" ]; then
+      cp "${file}" "${output_file}"
+      return 0
+    fi
+  done
+  echo "no CA bundle found on the build host" >&2
   exit 1
+}
+
+if [ -n "${ca_trust_source}" ]; then
+  write_bundle_from_trust_source "${ca_trust_source}"
+else
+  copy_host_bundle
 fi

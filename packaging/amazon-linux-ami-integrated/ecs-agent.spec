@@ -25,6 +25,9 @@
 %global debug_package %{nil}
 %global agent_image ecs-agent-v%{version}.tar
 %global ebs_csi_driver_dir /var/lib/ecs/deps/daemons/ebs-csi-driver
+# The agent image's CA bundle is built only from this file of the
+# ca-certificates package, not from the build host's trust store.
+%global ca_trust_source %{_datadir}/pki/ca-trust-source/ca-bundle.trust.p11-kit
 
 Name:           ecs-init
 Version:        1.108.2
@@ -43,6 +46,8 @@ Source6:        ebs-csi-driver-arm64-v%{version}.tar
 Source7:        ebs-csi-driver-v%{version}.tar
 
 BuildRequires:  golang >= 1.26.0
+BuildRequires:  ca-certificates
+BuildRequires:  p11-kit-trust
 %if %{with systemd}
 BuildRequires:  systemd
 Requires:       systemd
@@ -281,7 +286,7 @@ required routes among its preparation steps.
 
 %build
 # each of these should build for arm and amd arch
-make release-agent-internal
+make release-agent-internal CA_TRUST_SOURCE="%{ca_trust_source}"
 ./scripts/gobuild.sh %{gobuild_tag}
 
 %install
