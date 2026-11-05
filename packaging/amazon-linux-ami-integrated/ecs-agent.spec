@@ -25,6 +25,9 @@
 %global debug_package %{nil}
 %global agent_image ecs-agent-v%{version}.tar
 %global ebs_csi_driver_dir /var/lib/ecs/deps/daemons/ebs-csi-driver
+# The agent image's CA bundle is built only from this file of the
+# ca-certificates package, not from the build host's trust store.
+%global ca_trust_source %{_datadir}/pki/ca-trust-source/ca-bundle.trust.p11-kit
 
 Name:           ecs-init
 Version:        1.108.2
@@ -43,6 +46,8 @@ Source6:        ebs-csi-driver-arm64-v%{version}.tar
 Source7:        ebs-csi-driver-v%{version}.tar
 
 BuildRequires:  golang >= 1.26.0
+BuildRequires:  ca-certificates
+BuildRequires:  p11-kit-trust
 %if %{with systemd}
 BuildRequires:  systemd
 Requires:       systemd
@@ -280,8 +285,21 @@ required routes among its preparation steps.
 %setup -c
 
 %build
+# Check that the trust file is the package's own copy and not a copy from the
+# build host. rpm -V reports the file when its size or digest differs from the
+# package. Owner, group, mode and mtime are not checked.
+# rpm cannot always read the build root's rpm database: on AL2 Koji builds, a
+# newer rpm on the builder writes it. In that case, the check is skipped.
+if rpm -q ca-certificates >/dev/null 2>&1; then
+    if rpm -V --nouser --nogroup --nomode --nomtime ca-certificates | grep -q " %{ca_trust_source}$"; then
+        echo "%{ca_trust_source} does not match the ca-certificates package" >&2
+        exit 1
+    fi
+else
+    echo "Cannot read the rpm database. Skipping the check of %{ca_trust_source}." >&2
+fi
 # each of these should build for arm and amd arch
-make release-agent-internal
+make release-agent-internal CA_TRUST_SOURCE="%{ca_trust_source}"
 ./scripts/gobuild.sh %{gobuild_tag}
 
 %install
