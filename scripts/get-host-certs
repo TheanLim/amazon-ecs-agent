@@ -12,14 +12,71 @@
 # express or implied. See the License for the specific language governing
 # permissions and limitations under the License.
 #
-# this script searches through known locations for certs (borrowed from 
-# https://go.dev/src/crypto/x509/root_linux.go) and writes them to the
-# current dir 
+# Writes the CA bundle for the agent image to misc/certs/host-certs.crt.
+#
+# By default, the script copies the first CA bundle it finds in the known host
+# locations (borrowed from https://go.dev/src/crypto/x509/root_linux.go).
+#
+# With KOJI_BUILD=true, the script builds the bundle only from the p11-kit trust
+# file of the ca-certificates package. It does not read any other trust source
+# on the host.
 
 set -ex
 
+# p11-kit trust file of the ca-certificates package.
+caTrustSource="/usr/share/pki/ca-trust-source/ca-bundle.trust.p11-kit"
+
 ROOT=$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )
 cd "${ROOT}/misc/certs"
+
+# Print each PEM certificate in a file as one line of base64, sorted.
+cert_bodies() {
+  awk '/-----BEGIN CERTIFICATE-----/ { body = ""; inCert = 1; next }
+       /-----END CERTIFICATE-----/   { print body; inCert = 0; next }
+       inCert                        { gsub(/[[:space:]]/, ""); body = body $0 }' "$1" | sort -u
+}
+
+if [ "${KOJI_BUILD:-false}" = "true" ]; then
+  if [ ! -f "${caTrustSource}" ]; then
+    echo "CA trust source ${caTrustSource} does not exist" >&2
+    exit 1
+  fi
+
+  # trust extract reads every trust source that p11-kit is configured with,
+  # including the anchors directories. A p11-kit module config in a temporary
+  # HOME limits the p11-kit trust module to that file only.
+  trustHome="$(mktemp -d)"
+  trap 'rm -rf "${trustHome}"' EXIT
+  mkdir -p "${trustHome}/.config/pkcs11/modules"
+  printf 'module: p11-kit-trust.so\nx-init-reserved: paths=%s\n' "${caTrustSource}" \
+    > "${trustHome}/.config/pkcs11/modules/p11-kit-trust.module"
+
+  # p11-kit ignores the user config in HOME when it runs as root. As root,
+  # run trust extract as the nobody user instead.
+  runAs=()
+  if [ "$(id -u)" -eq 0 ]; then
+    chown -R "$(id -u nobody):$(id -g nobody)" "${trustHome}"
+    runAs=(setpriv --reuid="$(id -u nobody)" --regid="$(id -g nobody)" --clear-groups)
+  fi
+  HOME="${trustHome}" "${runAs[@]}" trust extract --format=pem-bundle --filter=ca-anchors \
+    --purpose=server-auth --overwrite "${trustHome}/host-certs.crt"
+  cp "${trustHome}/host-certs.crt" ./host-certs.crt
+
+  certCount="$(grep -c 'BEGIN CERTIFICATE' ./host-certs.crt || true)"
+  if [ "${certCount}" -eq 0 ]; then
+    echo "host-certs.crt has no certificates" >&2
+    exit 1
+  fi
+
+  # Every certificate in the bundle must come from the CA trust source.
+  extraCerts="$(comm -23 <(cert_bodies ./host-certs.crt) <(cert_bodies "${caTrustSource}"))"
+  if [ -n "${extraCerts}" ]; then
+    echo "host-certs.crt has certificates that are not in ${caTrustSource}" >&2
+    rm -f ./host-certs.crt
+    exit 1
+  fi
+  exit 0
+fi
 
 # Possible certificate files
 certFiles=("/etc/ssl/certs/ca-certificates.crt" "/etc/pki/tls/certs/ca-bundle.crt" "/etc/ssl/ca-bundle.pem" "/etc/pki/tls/cacert.pem" "/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem" "/etc/ssl/cert.pem")
