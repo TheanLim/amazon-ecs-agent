@@ -12,14 +12,57 @@
 # express or implied. See the License for the specific language governing
 # permissions and limitations under the License.
 #
-# this script searches through known locations for certs (borrowed from 
-# https://go.dev/src/crypto/x509/root_linux.go) and writes them to the
-# current dir 
+# Usage: get-host-certs [ca-trust-source]
+#
+# Writes the CA bundle for the agent image to misc/certs/host-certs.crt.
+#
+# Without an argument, the script copies the first CA bundle it finds in the
+# known host locations (borrowed from https://go.dev/src/crypto/x509/root_linux.go).
+#
+# With an argument, the bundle holds only the certificates that are both
+# server-auth anchors on the host and in the given p11-kit trust file (for
+# example ca-bundle.trust.p11-kit from the ca-certificates package).
 
 set -ex
 
+# Resolve the CA trust source before the cd, so a relative path is read from
+# the caller's directory.
+caTrustSource="${1:+$(realpath "$1")}"
+
 ROOT=$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )
 cd "${ROOT}/misc/certs"
+
+# Print each PEM certificate in a file as one line of base64, sorted.
+cert_bodies() {
+  awk '/-----BEGIN CERTIFICATE-----/ { body = ""; inCert = 1; next }
+       /-----END CERTIFICATE-----/   { print body; inCert = 0; next }
+       inCert                        { gsub(/[[:space:]]/, ""); body = body $0 }' "$1" | sort -u
+}
+
+if [ -n "${caTrustSource}" ]; then
+  if [ ! -f "${caTrustSource}" ]; then
+    echo "CA trust source ${caTrustSource} does not exist" >&2
+    exit 1
+  fi
+
+  # trust extract applies the host's trust policy, but it also reads the host's
+  # anchors directories. Keep only the certificates that are also in the CA
+  # trust source.
+  hostAnchors="$(mktemp)"
+  trap 'rm -f "${hostAnchors}"' EXIT
+  trust extract --format=pem-bundle --filter=ca-anchors --purpose=server-auth \
+    --overwrite "${hostAnchors}"
+  comm -12 <(cert_bodies "${hostAnchors}") <(cert_bodies "${caTrustSource}") \
+    | awk '{ print "-----BEGIN CERTIFICATE-----"
+             for (i = 1; i <= length($0); i += 64) print substr($0, i, 64)
+             print "-----END CERTIFICATE-----" }' > ./host-certs.crt
+
+  if ! grep -q 'BEGIN CERTIFICATE' ./host-certs.crt; then
+    echo "host-certs.crt has no certificates" >&2
+    exit 1
+  fi
+  exit 0
+fi
 
 # Possible certificate files
 certFiles=("/etc/ssl/certs/ca-certificates.crt" "/etc/pki/tls/certs/ca-bundle.crt" "/etc/ssl/ca-bundle.pem" "/etc/pki/tls/cacert.pem" "/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem" "/etc/ssl/cert.pem")

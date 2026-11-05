@@ -292,8 +292,11 @@ cni-plugins: get-cni-sources .out-stamp build-ecs-cni-plugins build-vpc-cni-plug
 dockerfree-pause:
 	./scripts/build-pause
 
+# CA_TRUST_SOURCE: optional p11-kit trust file to build the agent image's CA bundle from.
+# Without it, the CA bundle is copied from the build host.
+CA_TRUST_SOURCE ?=
 dockerfree-certs:
-	./scripts/get-host-certs
+	./scripts/get-host-certs $(CA_TRUST_SOURCE)
 
 dockerfree-cni-plugins:
 	./scripts/build-cni-plugins

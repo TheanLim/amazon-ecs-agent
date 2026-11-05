@@ -43,6 +43,8 @@ Source6:        ebs-csi-driver-arm64-v%{version}.tar
 Source7:        ebs-csi-driver-v%{version}.tar
 
 BuildRequires:  golang >= 1.26.0
+BuildRequires:  ca-certificates
+BuildRequires:  p11-kit-trust
 %if %{with systemd}
 BuildRequires:  systemd
 Requires:       systemd
@@ -280,8 +282,22 @@ required routes among its preparation steps.
 %setup -c
 
 %build
+# The agent image's CA bundle comes only from the ca-certificates package,
+# not from the build host's trust store.
+CA_TRUST_SOURCE="$(rpm -ql ca-certificates | grep 'ca-bundle.trust.p11-kit$')"
+if [ -z "${CA_TRUST_SOURCE}" ]; then
+    echo "ca-certificates does not ship ca-bundle.trust.p11-kit" >&2
+    exit 1
+fi
+# The build host's copy of the file can replace the package's copy in the
+# build root. rpm -V reports the file when its size or digest differs from
+# the package. Owner, group, mode and mtime are not checked.
+if rpm -V --nouser --nogroup --nomode --nomtime ca-certificates | grep -q "${CA_TRUST_SOURCE}$"; then
+    echo "${CA_TRUST_SOURCE} does not match the ca-certificates package" >&2
+    exit 1
+fi
 # each of these should build for arm and amd arch
-make release-agent-internal
+make release-agent-internal CA_TRUST_SOURCE="${CA_TRUST_SOURCE}"
 ./scripts/gobuild.sh %{gobuild_tag}
 
 %install
