@@ -284,7 +284,11 @@ required routes among its preparation steps.
 %build
 # The agent image's CA bundle comes only from the ca-certificates package,
 # not from the build host's trust store.
-CA_TRUST_SOURCE="$(rpm -ql ca-certificates | grep 'ca-bundle.trust.p11-kit$')"
+# The build user cannot open the build root's rpm database, so read a copy.
+ls -ld /var/lib/rpm; ls -l /var/lib/rpm | head -5
+rpmDb="$(mktemp -d)"
+cp -r /var/lib/rpm/. "${rpmDb}/"
+CA_TRUST_SOURCE="$(rpm --dbpath "${rpmDb}" -ql ca-certificates | grep 'ca-bundle.trust.p11-kit$')"
 if [ -z "${CA_TRUST_SOURCE}" ]; then
     echo "ca-certificates does not ship ca-bundle.trust.p11-kit" >&2
     exit 1
@@ -292,10 +296,11 @@ fi
 # The build host's copy of the file can replace the package's copy in the
 # build root. rpm -V reports the file when its size or digest differs from
 # the package. Owner, group, mode and mtime are not checked.
-if rpm -V --nouser --nogroup --nomode --nomtime ca-certificates | grep -q "${CA_TRUST_SOURCE}$"; then
+if rpm --dbpath "${rpmDb}" -V --nouser --nogroup --nomode --nomtime ca-certificates | grep -q "${CA_TRUST_SOURCE}$"; then
     echo "${CA_TRUST_SOURCE} does not match the ca-certificates package" >&2
     exit 1
 fi
+rm -rf "${rpmDb}"
 # each of these should build for arm and amd arch
 make release-agent-internal CA_TRUST_SOURCE="${CA_TRUST_SOURCE}"
 ./scripts/gobuild.sh %{gobuild_tag}
